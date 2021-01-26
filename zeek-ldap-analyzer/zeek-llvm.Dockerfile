@@ -138,10 +138,18 @@ RUN sed -i "s/buster main/buster main contrib non-free/g" /etc/apt/sources.list 
 #Update Path
 ENV PATH "${ZEEK_DIR}/bin:${PATH}"
 
+ADD ldap.pcapng /pcap/ldap.pcapng
+
 RUN groupadd --gid ${DEFAULT_GID} ${PUSER} && \
     useradd -M --uid ${DEFAULT_UID} --gid ${DEFAULT_GID} --home /nonexistant ${PUSER} && \
-    usermod -a -G tty ${PUSER}
+    usermod -a -G tty ${PUSER} && \
+    mkdir /logs && \
+    chown -R ${DEFAULT_UID}:${DEFAULT_GID} /pcap /logs
 
 USER ${PUSER}
 
-ENTRYPOINT ["/bin/bash"]
+WORKDIR /logs
+
+ENTRYPOINT ["/opt/zeek/bin/zeek"]
+
+CMD ["-C", "-r", "/pcap/ldap.pcapng", "local"]
