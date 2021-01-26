@@ -13,7 +13,7 @@ Successfully tagged zeek-llvm:3.0.12
 2. make a place for the logs
 
 ```
-$ mkdir -p ./logs-llvm ./logs-gcc && rm -f ./logs-llvm/* ./logs-gcc/*`
+$ mkdir -p ./logs-llvm ./logs-gcc && rm -f ./logs-llvm/* ./logs-gcc/*
 ```
 
 3. run the tests
