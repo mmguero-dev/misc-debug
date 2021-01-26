@@ -1,0 +1,4 @@
+[submodule "zeek-ldap-analyzer/ldap-analyzer"]
+	path = zeek-ldap-analyzer/ldap-analyzer
+	url = https://github.com/mmguero-dev/ldap-analyzer
+	branch = master

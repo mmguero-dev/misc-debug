@@ -16,6 +16,8 @@ ENV ZEEK_SRC_DIR "${SRC_BASE_DIR}/zeek-${ZEEK_VERSION}"
 
 ENV PATH "${ZEEK_DIR}/bin:${CMAKE_DIR}/bin:${PATH}"
 
+ADD ldap-analyzer /usr/local/src/ldap-analyzer
+
 RUN sed -i "s/buster main/buster main contrib non-free/g" /etc/apt/sources.list && \
       echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
       apt-get -q update && \
@@ -62,12 +64,10 @@ RUN sed -i "s/buster main/buster main contrib non-free/g" /etc/apt/sources.list 
     cd build && \
     ninja && \
     ninja install && \
-  cd "${SRC_BASE_DIR}" && \
-    git clone --depth=1 --single-branch --recursive -b master https://github.com/mmguero-dev/ldap-analyzer && \
-      cd ./ldap-analyzer && \
-      ./configure --zeek-dist="${ZEEK_SRC_DIR}" --install-root="${ZEEK_DIR}/lib/zeek/plugins" && \
-      make && \
-      make install
+  cd "${SRC_BASE_DIR}"/ldap-analyzer && \
+    ./configure --zeek-dist="${ZEEK_SRC_DIR}" --install-root="${ZEEK_DIR}/lib/zeek/plugins" && \
+    make && \
+    make install
 
 FROM debian:buster-slim
 
