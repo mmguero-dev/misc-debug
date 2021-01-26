@@ -120,7 +120,7 @@ RUN sed -i "s/buster main/buster main contrib non-free/g" /etc/apt/sources.list 
 #Update Path
 ENV PATH "${ZEEK_DIR}/bin:${PATH}"
 
-ADD ldap.pcapng /pcap/ldap.pcapng
+ADD ./ldap-analyzer/tests/Traces /pcap
 
 RUN groupadd --gid ${DEFAULT_GID} ${PUSER} && \
     useradd -M --uid ${DEFAULT_UID} --gid ${DEFAULT_GID} --home /nonexistant ${PUSER} && \
