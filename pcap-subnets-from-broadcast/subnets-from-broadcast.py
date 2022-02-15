@@ -8,12 +8,9 @@ import math
 import os
 import sys
 import netaddr
-import json
 
 from scapy.all import *
 from collections import namedtuple
-
-import mmguero
 
 ###################################################################################################
 args = None
@@ -23,9 +20,7 @@ orig_path = os.getcwd()
 
 Host = namedtuple("Host", ["mac", "ip"])
 
-
-# function to find the position
-# of rightmost set bit
+# function to find the position of rightmost set bit
 def getPosOfRightmostSetBit(n):
     return round(math.log(((n & -n) + 1), 2))
 
@@ -43,25 +38,6 @@ def getPosOfRightMostUnsetBit(n):
     # position of rightmost unset bit in 'n'
     # passing ~n as argument
     return getPosOfRightmostSetBit(~n)
-
-
-def guessSubnetCidr(hosts):
-    numeric_hosts = [int(ip) for ip in sorted(hosts)]
-    subnet_range = numeric_hosts[-1] - numeric_hosts[0]
-    final_host = netaddr.IPAddress(numeric_hosts[-1])
-
-    exponent = 0
-    estimated_subnet_size = 1
-    cidr = 32
-    # if 2^x is less than the range of ip address and if the maximum proposed range is still lower than the highest ip address
-    while ((2**exponent) < subnet_range) or (
-        final_host not in netaddr.IPNetwork(f"{str(netaddr.IPAddress(numeric_hosts[0]))}/{cidr}")
-    ):
-        estimated_subnet_size = 2**exponent
-        exponent = exponent + 1
-        cidr = cidr - 1
-
-    return cidr
 
 
 ###################################################################################################
@@ -146,10 +122,7 @@ def main():
         if subnet.prefixlen > 0 and subnet.prefixlen < 32
     ]
     for subnet in subnetsFromBroadcast:
-        logging.debug(subnet.cidr)
-
-    guessed = guessSubnetCidr(x.ip for x in list(itertools.chain(*ipv4Pairs)))
-    logging.debug(guessed)
+        print(subnet.cidr)
 
 
 ###################################################################################################
