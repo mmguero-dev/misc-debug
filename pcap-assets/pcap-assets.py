@@ -4,9 +4,9 @@
 import argparse
 import itertools
 import logging
+import math
 import os
 import sys
-import ipaddress
 import netaddr
 import json
 
@@ -22,6 +22,47 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 orig_path = os.getcwd()
 
 Host = namedtuple("Host", ["mac", "ip"])
+
+
+# function to find the position
+# of rightmost set bit
+def getPosOfRightmostSetBit(n):
+    return round(math.log(((n & -n) + 1), 2))
+
+
+# function to get the position ot rightmost unset bit
+def getPosOfRightMostUnsetBit(n):
+    # if n = 0, return 1
+    if n == 0:
+        return 1
+
+    # if all bits of 'n' are set
+    if (n & (n + 1)) == 0:
+        return -1
+
+    # position of rightmost unset bit in 'n'
+    # passing ~n as argument
+    return getPosOfRightmostSetBit(~n)
+
+
+def guessSubnetCidr(hosts):
+    numeric_hosts = [int(ip) for ip in sorted(hosts)]
+    subnet_range = numeric_hosts[-1] - numeric_hosts[0]
+    final_host = netaddr.IPAddress(numeric_hosts[-1])
+
+    exponent = 0
+    estimated_subnet_size = 1
+    cidr = 32
+    # if 2^x is less than the range of ip address and if the maximum proposed range is still lower than the highest ip address
+    while ((2**exponent) < subnet_range) or (
+        final_host not in netaddr.IPNetwork(f"{str(netaddr.IPAddress(numeric_hosts[0]))}/{cidr}")
+    ):
+        estimated_subnet_size = 2**exponent
+        exponent = exponent + 1
+        cidr = cidr - 1
+
+    return cidr
+
 
 ###################################################################################################
 # main
@@ -39,32 +80,6 @@ def main():
         usage='{} <arguments>'.format(script_name),
     )
     parser.add_argument('--verbose', '-v', action='count', default=1, help='Increase verbosity (e.g., -v, -vv, etc.)')
-    parser.add_argument(
-        '--ipv6',
-        dest='ipv6',
-        action='store_true',
-        help='Extract IPv6 addresses',
-    )
-    parser.add_argument(
-        '--no-ipv6',
-        dest='ipv6',
-        action='store_false',
-        help='Do not extract IPv6 addresses (default)',
-    )
-    parser.set_defaults(ipv6=False)
-    parser.add_argument(
-        '--ipv4',
-        dest='ipv4',
-        action='store_true',
-        help='Extract IPv4 addresses (default)',
-    )
-    parser.add_argument(
-        '--no-ipv4',
-        dest='ipv4',
-        action='store_false',
-        help='Do not extract IPv4 addresses',
-    )
-    parser.set_defaults(ipv4=True)
     parser.add_argument(
         '-i',
         '--input',
@@ -95,51 +110,46 @@ def main():
     IP.payload_guess = []
 
     ipv4Pairs = list()
-    ipv6Pairs = list()
 
     for file in args.input:
         for p in PcapReader(file):
-            if Ether in p:
-                if args.ipv4 and (IP in p):
-                    ipv4Pairs.append(
-                        sorted(
-                            [
-                                Host(
-                                    netaddr.EUI(p[Ether].src),
-                                    ipaddress.ip_address(p[IP].src),
-                                ),
-                                Host(
-                                    netaddr.EUI(p[Ether].dst),
-                                    ipaddress.ip_address(p[IP].dst),
-                                ),
-                            ]
-                        )
+            if (Ether in p) and (IP in p):
+                ipv4Pairs.append(
+                    sorted(
+                        [
+                            Host(
+                                netaddr.EUI(p[Ether].src),
+                                netaddr.IPAddress(p[IP].src),
+                            ),
+                            Host(
+                                netaddr.EUI(p[Ether].dst),
+                                netaddr.IPAddress(p[IP].dst),
+                            ),
+                        ]
                     )
-                elif args.ipv6 and (IPv6 in p):
-                    ipv6Pairs.append(
-                        sorted(
-                            [
-                                Host(
-                                    netaddr.EUI(p[Ether].src),
-                                    ipaddress.ip_address(p[IPv6].src),
-                                ),
-                                Host(
-                                    netaddr.EUI(p[Ether].dst),
-                                    ipaddress.ip_address(p[IPv6].dst),
-                                ),
-                            ]
-                        )
-                    )
+                )
 
-    if args.ipv4:
-        ipv4Pairs = [i for i, _ in itertools.groupby(sorted(ipv4Pairs))]
-        for pair in ipv4Pairs:
-            logging.debug(pair)
+    ipv4Pairs = [i for i, _ in itertools.groupby(sorted(ipv4Pairs))]
+    subnetsFromBroadcast = [
+        subnet
+        for subnet in sorted(
+            list(
+                set(
+                    [
+                        netaddr.IPNetwork(f"{x.ip}/{32 - ((getPosOfRightMostUnsetBit(int(x.ip)) // 8) * 8)}")
+                        for x in list(itertools.chain(*ipv4Pairs))
+                        if x.mac == netaddr.EUI('ff-ff-ff-ff-ff-ff') and x.ip != netaddr.IPAddress('255.255.255.255')
+                    ]
+                )
+            )
+        )
+        if subnet.prefixlen > 0 and subnet.prefixlen < 32
+    ]
+    for subnet in subnetsFromBroadcast:
+        logging.debug(subnet.cidr)
 
-    if args.ipv6:
-        ipv6Pairs = [j for j, _ in itertools.groupby(sorted(ipv6Pairs))]
-        for pair in ipv6Pairs:
-            logging.debug(pair)
+    guessed = guessSubnetCidr(x.ip for x in list(itertools.chain(*ipv4Pairs)))
+    logging.debug(guessed)
 
 
 ###################################################################################################
