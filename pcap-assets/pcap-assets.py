@@ -6,10 +6,12 @@ import itertools
 import logging
 import os
 import sys
-from socket import inet_aton
-import struct
+import ipaddress
+import netaddr
+import json
 
 from scapy.all import *
+from collections import namedtuple
 
 import mmguero
 
@@ -18,6 +20,8 @@ args = None
 script_name = os.path.basename(__file__)
 script_path = os.path.dirname(os.path.realpath(__file__))
 orig_path = os.getcwd()
+
+Host = namedtuple("Host", ["mac", "ip"])
 
 ###################################################################################################
 # main
@@ -39,7 +43,7 @@ def main():
         '--ipv6',
         dest='ipv6',
         action='store_true',
-        help='Extract IPv6 addresses (default: IPv4)',
+        help='Extract IPv6 addresses',
     )
     parser.add_argument(
         '--no-ipv6',
@@ -48,6 +52,19 @@ def main():
         help='Do not extract IPv6 addresses (default)',
     )
     parser.set_defaults(ipv6=False)
+    parser.add_argument(
+        '--ipv4',
+        dest='ipv4',
+        action='store_true',
+        help='Extract IPv4 addresses (default)',
+    )
+    parser.add_argument(
+        '--no-ipv4',
+        dest='ipv4',
+        action='store_false',
+        help='Do not extract IPv4 addresses',
+    )
+    parser.set_defaults(ipv4=True)
     parser.add_argument(
         '-i',
         '--input',
@@ -77,13 +94,52 @@ def main():
 
     IP.payload_guess = []
 
-    ipv4 = sorted(
-        list(
-            set(itertools.chain(*[(p[IP].dst, p[IP].src) for file in args.input for p in PcapReader(file) if IP in p]))
-        ),
-        key=lambda ip: struct.unpack("!L", inet_aton(ip))[0],
-    )
-    logging.debug(ipv4)
+    ipv4Pairs = list()
+    ipv6Pairs = list()
+
+    for file in args.input:
+        for p in PcapReader(file):
+            if Ether in p:
+                if args.ipv4 and (IP in p):
+                    ipv4Pairs.append(
+                        sorted(
+                            [
+                                Host(
+                                    netaddr.EUI(p[Ether].src),
+                                    ipaddress.ip_address(p[IP].src),
+                                ),
+                                Host(
+                                    netaddr.EUI(p[Ether].dst),
+                                    ipaddress.ip_address(p[IP].dst),
+                                ),
+                            ]
+                        )
+                    )
+                elif args.ipv6 and (IPv6 in p):
+                    ipv6Pairs.append(
+                        sorted(
+                            [
+                                Host(
+                                    netaddr.EUI(p[Ether].src),
+                                    ipaddress.ip_address(p[IPv6].src),
+                                ),
+                                Host(
+                                    netaddr.EUI(p[Ether].dst),
+                                    ipaddress.ip_address(p[IPv6].dst),
+                                ),
+                            ]
+                        )
+                    )
+
+    if args.ipv4:
+        ipv4Pairs = [i for i, _ in itertools.groupby(sorted(ipv4Pairs))]
+        for pair in ipv4Pairs:
+            logging.debug(pair)
+
+    if args.ipv6:
+        ipv6Pairs = [j for j, _ in itertools.groupby(sorted(ipv6Pairs))]
+        for pair in ipv6Pairs:
+            logging.debug(pair)
 
 
 ###################################################################################################
