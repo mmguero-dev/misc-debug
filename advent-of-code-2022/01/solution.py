@@ -8,5 +8,5 @@ with open(sys.argv[1], 'r') as f:
 
 cals = sorted([sum([int(x) for x in y if x.isdigit()]) for y in elves])
 
-print(max(cals))
+print(cals[-1])
 print(sum(cals[-3:]))
