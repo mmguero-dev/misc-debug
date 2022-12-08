@@ -157,9 +157,10 @@ def main():
             devices.append(ipAddressObj.device)
         elif hasattr(ipAddressObj, 'virtual_machine'):
             devices.append(ipAddressObj.virtual_machine)
-    logging.debug(
+
+    print(
         json.dumps(
-            [x.serialize() for x in devices],
+            {"devices": [x.name for x in devices]},
             indent=2,
         )
     )
