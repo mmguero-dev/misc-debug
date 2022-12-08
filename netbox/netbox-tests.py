@@ -160,7 +160,7 @@ def main():
 
     print(
         json.dumps(
-            {"devices": [x.serialize() for x in devices]},
+            {"devices": [x.name if x.name else x.display for x in devices]},
             indent=2,
         )
     )
