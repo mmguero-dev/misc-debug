@@ -69,6 +69,15 @@ def main():
         required=True,
         help="NetBox API Token",
     )
+    parser.add_argument(
+        '-i',
+        '--ip',
+        dest='ipSearchKey',
+        type=str,
+        default=None,
+        required=False,
+        help="Search by this IP address",
+    )
     try:
         parser.error = parser.exit
         args = parser.parse_args()
@@ -97,13 +106,63 @@ def main():
     sitesConnTest = None
     while args.wait:
         try:
-            sitesConnTest = [x.name for x in nb.dcim.sites.all()]
+            sitesConnTest = nb.dcim.sites.all()
             break
         except Exception as e:
             logging.info(f"{type(e).__name__}: {e}")
             logging.debug("retrying in a few seconds...")
             time.sleep(5)
-    logging.debug(sitesConnTest)
+    logging.debug(
+        json.dumps(
+            [x.serialize() for x in sitesConnTest],
+            indent=2,
+        )
+    )
+
+    # retrieve the list IP address prefixes containing the search key
+    prefixes = nb.ipam.prefixes.filter(contains=args.ipSearchKey) if args.ipSearchKey else nb.ipam.prefixes.all()
+    logging.debug(
+        json.dumps(
+            [x.serialize() for x in prefixes],
+            indent=2,
+        )
+    )
+
+    # retrieve the list IP addresses where address matches the search key, limited to "assigned" addresses
+    ipAddresses = [
+        x
+        for x in (
+            nb.ipam.ip_addresses.filter(
+                address=args.ipSearchKey,
+            )
+            if args.ipSearchKey
+            else nb.ipam.ip_addresses.all()
+        )
+        if x.assigned_object
+    ]
+    logging.debug(
+        json.dumps(
+            [x.serialize() for x in ipAddresses],
+            indent=2,
+        )
+    )
+
+    # for the IP addresses returned in the search above, search for devices pertaining to the
+    # interfaces assigned to each IP address (e.g., ipam.ip_address -> dcim.interface -> dcim.device, or
+    # ipam.ip_address -> virtualization.interface -> virtualization.virtual_machine)
+    devices = []
+    for ipAddress in ipAddresses:
+        ipAddressObj = ipAddress.assigned_object
+        if hasattr(ipAddressObj, 'device'):
+            devices.append(ipAddressObj.device)
+        elif hasattr(ipAddressObj, 'virtual_machine'):
+            devices.append(ipAddressObj.virtual_machine)
+    logging.debug(
+        json.dumps(
+            [x.serialize() for x in devices],
+            indent=2,
+        )
+    )
 
 
 ###################################################################################################
