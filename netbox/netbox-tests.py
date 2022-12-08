@@ -21,6 +21,39 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 orig_path = os.getcwd()
 
 ###################################################################################################
+def is_ip_address(x):
+    try:
+        ip = ipaddress.ip_address(x)
+        return True
+    except Exception:
+        return False
+
+
+def is_ip_v4_address(x):
+    try:
+        ip = ipaddress.IPv4Address(x)
+        return True
+    except Exception:
+        return False
+
+
+def is_ip_v6_address(x):
+    try:
+        ip = ipaddress.IPv6Address(x)
+        return True
+    except Exception:
+        return False
+
+
+def is_ip_network(x):
+    try:
+        ip = ipaddress.ip_network(x)
+        return True
+    except Exception:
+        return False
+
+
+###################################################################################################
 # main
 def main():
     global args
@@ -81,7 +114,13 @@ def main():
     try:
         parser.error = parser.exit
         args = parser.parse_args()
+        if args.ipSearchKey and not is_ip_address(args.ipSearchKey):
+            raise ValueError(f"{args.ipSearchKey} is not a valid IP address")
     except SystemExit:
+        parser.print_help()
+        exit(2)
+    except Exception as e:
+        logging.error(e)
         parser.print_help()
         exit(2)
 
@@ -112,24 +151,30 @@ def main():
             logging.info(f"{type(e).__name__}: {e}")
             logging.debug("retrying in a few seconds...")
             time.sleep(5)
-    logging.debug(
-        json.dumps(
-            [x.serialize() for x in sitesConnTest],
-            indent=2,
+
+    # retrieve the list VRFs containing IP address prefixes containing the search key
+    vrfs = list(
+        set(
+            [
+                x.vrf
+                for x in (
+                    nb.ipam.prefixes.filter(
+                        contains=args.ipSearchKey,
+                    )
+                    if args.ipSearchKey
+                    else nb.ipam.prefixes.all()
+                )
+                if x.vrf
+            ]
         )
     )
 
-    # retrieve the list IP address prefixes containing the search key
-    prefixes = nb.ipam.prefixes.filter(contains=args.ipSearchKey) if args.ipSearchKey else nb.ipam.prefixes.all()
-    logging.debug(
-        json.dumps(
-            [x.serialize() for x in prefixes],
-            indent=2,
-        )
-    )
-
-    # retrieve the list IP addresses where address matches the search key, limited to "assigned" addresses
-    ipAddresses = [
+    # retrieve the list IP addresses where address matches the search key, limited to "assigned" addresses.
+    # then, for those IP addresses, search for devices pertaining to the interfaces assigned to each
+    # IP address (e.g., ipam.ip_address -> dcim.interface -> dcim.device, or
+    # ipam.ip_address -> virtualization.interface -> virtualization.virtual_machine)
+    devices = []
+    for ipAddress in [
         x
         for x in (
             nb.ipam.ip_addresses.filter(
@@ -139,28 +184,20 @@ def main():
             else nb.ipam.ip_addresses.all()
         )
         if x.assigned_object
-    ]
-    logging.debug(
-        json.dumps(
-            [x.serialize() for x in ipAddresses],
-            indent=2,
-        )
-    )
-
-    # for the IP addresses returned in the search above, search for devices pertaining to the
-    # interfaces assigned to each IP address (e.g., ipam.ip_address -> dcim.interface -> dcim.device, or
-    # ipam.ip_address -> virtualization.interface -> virtualization.virtual_machine)
-    devices = []
-    for ipAddress in ipAddresses:
+    ]:
         ipAddressObj = ipAddress.assigned_object
         if hasattr(ipAddressObj, 'device'):
             devices.append(ipAddressObj.device)
         elif hasattr(ipAddressObj, 'virtual_machine'):
             devices.append(ipAddressObj.virtual_machine)
 
+    # -------------------------------
     print(
         json.dumps(
-            {"devices": [x.name if x.name else x.display for x in devices]},
+            {
+                "vrfs": [v.serialize() for v in vrfs],
+                "devices": [d.serialize() for d in devices],
+            },
             indent=2,
         )
     )
