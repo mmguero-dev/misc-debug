@@ -4,7 +4,7 @@
 require 'slop'
 require 'lru_redux'
 require 'json'
-require 'excon'
+require 'faraday'
 
 NETBOX_PAGE_SIZE=50
 
@@ -15,9 +15,14 @@ opts = Slop.parse do |o|
   o.bool '-v', '--verbose', 'enable verbose mode'
 end
 tokenHeader = { "Authorization" => "Token " + opts[:token],
-                "content-type" => "application/json" }
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json' }
 
-nb = Excon.new(opts[:url], :headers => tokenHeader, :persistent => true, :debug => opts.verbose?)
+nb = Faraday.new(opts[:url]) do |conn|
+  conn.request :authorization, 'Token', opts[:token]
+  conn.request :json
+  conn.response :json, :parser_options => { :symbolize_names => true }
+end
 
 vrfs = Array.new
 devices = Array.new
@@ -25,9 +30,9 @@ devices = Array.new
 # retrieve the list VRFs containing IP address prefixes containing the search key
 query = {:contains => opts[:ip], :offset => 0, :limit => NETBOX_PAGE_SIZE}
 while true do
-    tmpPrefixes = JSON.parse(nb.get(:path => "/api/ipam/prefixes/", :query => query).body.to_s).fetch("results", [])
+    tmpPrefixes = nb.get('/api/ipam/prefixes/', query).body.fetch(:results, [])
     tmpPrefixes.each do |p|
-        if (vrf = p.fetch("vrf", nil))
+        if (vrf = p.fetch(:vrf, nil))
           vrfs << vrf
         end
     end
@@ -41,9 +46,9 @@ end
 # ipam.ip_address -> virtualization.interface -> virtualization.virtual_machine)
 query = {:address => opts[:ip], :offset => 0, :limit => NETBOX_PAGE_SIZE}
 while true do
-    tmpIpAddresses = JSON.parse(nb.get(:path => "/api/ipam/ip-addresses/", :query => query).body.to_s).fetch("results", [])
+    tmpIpAddresses = nb.get('/api/ipam/ip-addresses/', query).body.fetch(:results, [])
     tmpIpAddresses.each do |i|
-        if (obj = i.fetch("assigned_object", nil)) && ((device = obj.fetch("device", nil)) || (device = obj.fetch("virtual_machine", nil)))
+        if (obj = i.fetch(:assigned_object, nil)) && ((device = obj.fetch(:device, nil)) || (device = obj.fetch(:virtual_machine, nil)))
             devices << device
         end
     end
@@ -51,6 +56,4 @@ while true do
     break unless (tmpIpAddresses.length() >= NETBOX_PAGE_SIZE)
 end
 
-puts JSON.pretty_generate({"vrfs" => vrfs.uniq, "devices" => devices.uniq})
-
-nb.reset()
+puts JSON.pretty_generate({:vrfs => vrfs.uniq, :devices => devices.uniq})
