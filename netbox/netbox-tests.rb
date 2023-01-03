@@ -119,7 +119,6 @@ begin
                        :device_type => ((dtype = device.fetch(:device_type, nil)) && dtype&.key?(:name)) ? dtype[:name] : dtype&.fetch(:display, nil),
                        :manufacturer => ((manuf = device.dig(:device_type, :manufacturer)) && manuf&.key?(:name)) ? manuf[:name] : manuf&.fetch(:display, nil),
                        :details => opts[:verbose] ? device : nil }
-          puts(JSON.pretty_generate(:service => device.fetch(:service, []).map {|s| s.fetch(:name, s.fetch(:display, nil)) }))
         end
       end
       query[:offset] += tmp_ip_addresses.length()
@@ -132,6 +131,7 @@ rescue Faraday::Error
   # give up aka do nothing
 end
 devices = collect_values(crush(devices))
+devices.fetch(:service, [])&.flatten!&.uniq!
 
-puts JSON.pretty_generate(:service => devices.fetch(:service, []))
-# puts JSON.pretty_generate({:vrfs => vrfs, :devices => devices})
+puts JSON.pretty_generate({:devices => devices})
+
