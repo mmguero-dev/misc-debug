@@ -1,0 +1,491 @@
+SYNCHROPHASOR::Frames {
+  streamSourceIdConfigFrameMap: {60: SYNCHROPHASOR::ConfigFrame {
+    initialized: True
+    cfgNum: False
+    timeBase: 1000000
+    contIdx: 0
+    numPMUActual: 1
+    allStationNames: [
+      PMU1            
+    ]
+    allPhasorNames: [
+      VA              
+      VB              
+      VC              
+    ]
+    allAnalogNames: []
+    allDigitalNames: [
+      Dig Channel 1   
+      Dig Channel 2   
+      Dig Channel 3   
+      Dig Channel 4   
+      Dig Channel 5   
+      Dig Channel 6   
+      Dig Channel 7   
+      Dig Channel 8   
+      Dig Channel 9   
+      Dig Channel 10  
+      Dig Channel 11  
+      Dig Channel 12  
+      Dig Channel 13  
+      Dig Channel 14  
+      Dig Channel 15  
+      Dig Channel 16  
+    ]
+    numPMUExpected: 1
+    pmuCfgs: [
+      SYNCHROPHASOR::PMUConfig {
+        frameType: CONFIG_2_FRAME
+        initialized: True
+        pmuIdx: 0
+        svcClass: 
+        dgnmrMult: 16
+        stationName: PMU1            
+        dataSourceId: 61
+        format: (phasorShape: 1, phasorFormat: 1, analogFormat: 1, freqFormat: 0, _: 0)
+        phnmr: 3
+        annmr: 0
+        dgnmr: 1
+        phnam: [
+          VA              
+          VB              
+          VC              
+        ]
+        annam: []
+        dgnam: [
+          Dig Channel 1   
+          Dig Channel 2   
+          Dig Channel 3   
+          Dig Channel 4   
+          Dig Channel 5   
+          Dig Channel 6   
+          Dig Channel 7   
+          Dig Channel 8   
+          Dig Channel 9   
+          Dig Channel 10  
+          Dig Channel 11  
+          Dig Channel 12  
+          Dig Channel 13  
+          Dig Channel 14  
+          Dig Channel 15  
+          Dig Channel 16  
+        ]
+        phunit: [
+          SYNCHROPHASOR::PhasorConversionFactor {
+            format: (phunit: 196, phvalue: 4)
+          }
+          SYNCHROPHASOR::PhasorConversionFactor {
+            format: (phunit: 196, phvalue: 4)
+          }
+          SYNCHROPHASOR::PhasorConversionFactor {
+            format: (phunit: 196, phvalue: 4)
+          }
+        ]
+        anunit: []
+        digunit: [
+          SYNCHROPHASOR::DigitalStatusMaskWords {
+            normalStatusMask: 0
+            validInputsMask: 0
+          }
+        ]
+        fnom: 1
+        cfgcnt: 1
+      }
+    ]
+    dataRate: 50
+  }}
+  frms: [
+    SYNCHROPHASOR::Frame {
+      parseError: False
+      header: SYNCHROPHASOR::FrameHeader {
+        timeStamp: 2008-08-06T11:52:58.000000000Z
+        sync: SYNCHROPHASOR::SyncField {
+          frameType: COMMAND_FRAME
+          version: 1
+        }
+        frameSize: 18
+        dataStreamId: 60
+        fracSec: SYNCHROPHASOR::FracSec {
+          fracSec: 0
+          data: (fracSecRaw: 9448978, qualityIndicator: 0, leapSecPending: 0, leapSecOccurred: 0, leapSecDirection: 0, _: 0)
+        }
+      }
+      _payload: \x00\x05
+      chk: 5770
+      COMMAND_FRAME: SYNCHROPHASOR::CommandFrame {
+        cmd: 5
+        extframe: []
+      }
+    }
+    SYNCHROPHASOR::Frame {
+      parseError: False
+      header: SYNCHROPHASOR::FrameHeader {
+        timeStamp: 2008-08-01T16:18:11.000000000Z
+        sync: SYNCHROPHASOR::SyncField {
+          frameType: CONFIG_2_FRAME
+          version: 1
+        }
+        frameSize: 374
+        dataStreamId: 60
+        fracSec: SYNCHROPHASOR::FracSec {
+          fracSec: 0
+          data: (fracSecRaw: 520000, qualityIndicator: 0, leapSecPending: 0, leapSecOccurred: 0, leapSecDirection: 0, _: 0)
+        }
+      }
+      _payload: \x00\x0fB@\x00\x01PMU1            \x00=\x00\x07\x00\x03\x00\x00\x00\x01VA              VB              VC              Dig Channel 1   Dig Channel 2   Dig Channel 3   Dig Channel 4   Dig Channel 5   Dig Channel 6   Dig Channel 7   Dig Channel 8   Dig Channel 9   Dig Channel 10  Dig Channel 11  Dig Channel 12  Dig Channel 13  Dig Channel 14  Dig Channel 15  Dig Channel 16  \x00\x00\x04\xc4\x00\x00\x04\xc4\x00\x00\x04\xc4\x00\x00\x00\x00\x00\x01\x00\x01\x002
+      chk: 33234
+      CONFIG_FRAME: SYNCHROPHASOR::ConfigFrame {
+        initialized: True
+        cfgNum: False
+        timeBase: 1000000
+        contIdx: 0
+        numPMUActual: 1
+        allStationNames: [
+          PMU1            
+        ]
+        allPhasorNames: [
+          VA              
+          VB              
+          VC              
+        ]
+        allAnalogNames: []
+        allDigitalNames: [
+          Dig Channel 1   
+          Dig Channel 2   
+          Dig Channel 3   
+          Dig Channel 4   
+          Dig Channel 5   
+          Dig Channel 6   
+          Dig Channel 7   
+          Dig Channel 8   
+          Dig Channel 9   
+          Dig Channel 10  
+          Dig Channel 11  
+          Dig Channel 12  
+          Dig Channel 13  
+          Dig Channel 14  
+          Dig Channel 15  
+          Dig Channel 16  
+        ]
+        numPMUExpected: 1
+        pmuCfgs: [
+          SYNCHROPHASOR::PMUConfig {
+            frameType: CONFIG_2_FRAME
+            initialized: True
+            pmuIdx: 0
+            svcClass: 
+            dgnmrMult: 16
+            stationName: PMU1            
+            dataSourceId: 61
+            format: (phasorShape: 1, phasorFormat: 1, analogFormat: 1, freqFormat: 0, _: 0)
+            phnmr: 3
+            annmr: 0
+            dgnmr: 1
+            phnam: [
+              VA              
+              VB              
+              VC              
+            ]
+            annam: []
+            dgnam: [
+              Dig Channel 1   
+              Dig Channel 2   
+              Dig Channel 3   
+              Dig Channel 4   
+              Dig Channel 5   
+              Dig Channel 6   
+              Dig Channel 7   
+              Dig Channel 8   
+              Dig Channel 9   
+              Dig Channel 10  
+              Dig Channel 11  
+              Dig Channel 12  
+              Dig Channel 13  
+              Dig Channel 14  
+              Dig Channel 15  
+              Dig Channel 16  
+            ]
+            phunit: [
+              SYNCHROPHASOR::PhasorConversionFactor {
+                format: (phunit: 196, phvalue: 4)
+              }
+              SYNCHROPHASOR::PhasorConversionFactor {
+                format: (phunit: 196, phvalue: 4)
+              }
+              SYNCHROPHASOR::PhasorConversionFactor {
+                format: (phunit: 196, phvalue: 4)
+              }
+            ]
+            anunit: []
+            digunit: [
+              SYNCHROPHASOR::DigitalStatusMaskWords {
+                normalStatusMask: 0
+                validInputsMask: 0
+              }
+            ]
+            fnom: 1
+            cfgcnt: 1
+          }
+        ]
+        dataRate: 50
+      }
+    }
+    SYNCHROPHASOR::Frame {
+      parseError: False
+      header: SYNCHROPHASOR::FrameHeader {
+        timeStamp: 2008-08-06T11:52:58.000000010Z
+        sync: SYNCHROPHASOR::SyncField {
+          frameType: COMMAND_FRAME
+          version: 1
+        }
+        frameSize: 18
+        dataStreamId: 60
+        fracSec: SYNCHROPHASOR::FracSec {
+          fracSec: 10.2354
+          data: (fracSecRaw: 10235393, qualityIndicator: 0, leapSecPending: 0, leapSecOccurred: 0, leapSecDirection: 0, _: 0)
+        }
+      }
+      _payload: \x00\x02
+      chk: 63349
+      COMMAND_FRAME: SYNCHROPHASOR::CommandFrame {
+        cmd: 2
+        extframe: []
+      }
+    }
+    SYNCHROPHASOR::Frame {
+      parseError: False
+      header: SYNCHROPHASOR::FrameHeader {
+        timeStamp: 2008-08-01T16:18:11.000000000Z
+        sync: SYNCHROPHASOR::SyncField {
+          frameType: DATA_FRAME
+          version: 1
+        }
+        frameSize: 48
+        dataStreamId: 60
+        fracSec: SYNCHROPHASOR::FracSec {
+          fracSec: 0.58
+          data: (fracSecRaw: 580000, qualityIndicator: 0, leapSecPending: 0, leapSecOccurred: 0, leapSecDirection: 0, _: 0)
+        }
+      }
+      _payload: \x00\x00B\xc8'\xb9\xbf\xc8\x9e\xc2B\xc7\xe4y@'\xad'B\xc8\x05\x11?\x06\xbe\xb0\x00\x00\x00\x00\x00\x00
+      chk: 6812
+      DATA_FRAME: SYNCHROPHASOR::DataFrame {
+        initialized: True
+        cfgFrame: SYNCHROPHASOR::ConfigFrame {
+          initialized: True
+          cfgNum: False
+          timeBase: 1000000
+          contIdx: 0
+          numPMUActual: 1
+          allStationNames: [
+            PMU1            
+          ]
+          allPhasorNames: [
+            VA              
+            VB              
+            VC              
+          ]
+          allAnalogNames: []
+          allDigitalNames: [
+            Dig Channel 1   
+            Dig Channel 2   
+            Dig Channel 3   
+            Dig Channel 4   
+            Dig Channel 5   
+            Dig Channel 6   
+            Dig Channel 7   
+            Dig Channel 8   
+            Dig Channel 9   
+            Dig Channel 10  
+            Dig Channel 11  
+            Dig Channel 12  
+            Dig Channel 13  
+            Dig Channel 14  
+            Dig Channel 15  
+            Dig Channel 16  
+          ]
+          numPMUExpected: 1
+          pmuCfgs: [
+            SYNCHROPHASOR::PMUConfig {
+              frameType: CONFIG_2_FRAME
+              initialized: True
+              pmuIdx: 0
+              svcClass: 
+              dgnmrMult: 16
+              stationName: PMU1            
+              dataSourceId: 61
+              format: (phasorShape: 1, phasorFormat: 1, analogFormat: 1, freqFormat: 0, _: 0)
+              phnmr: 3
+              annmr: 0
+              dgnmr: 1
+              phnam: [
+                VA              
+                VB              
+                VC              
+              ]
+              annam: []
+              dgnam: [
+                Dig Channel 1   
+                Dig Channel 2   
+                Dig Channel 3   
+                Dig Channel 4   
+                Dig Channel 5   
+                Dig Channel 6   
+                Dig Channel 7   
+                Dig Channel 8   
+                Dig Channel 9   
+                Dig Channel 10  
+                Dig Channel 11  
+                Dig Channel 12  
+                Dig Channel 13  
+                Dig Channel 14  
+                Dig Channel 15  
+                Dig Channel 16  
+              ]
+              phunit: [
+                SYNCHROPHASOR::PhasorConversionFactor {
+                  format: (phunit: 196, phvalue: 4)
+                }
+                SYNCHROPHASOR::PhasorConversionFactor {
+                  format: (phunit: 196, phvalue: 4)
+                }
+                SYNCHROPHASOR::PhasorConversionFactor {
+                  format: (phunit: 196, phvalue: 4)
+                }
+              ]
+              anunit: []
+              digunit: [
+                SYNCHROPHASOR::DigitalStatusMaskWords {
+                  normalStatusMask: 0
+                  validInputsMask: 0
+                }
+              ]
+              fnom: 1
+              cfgcnt: 1
+            }
+          ]
+          dataRate: 50
+        }
+        cfgFound: True
+        numPMUExpected: 1
+        numPMUActual: 1
+        data: [
+          SYNCHROPHASOR::PMUData {
+            initialized: True
+            pmuFound: True
+            pmuIdx: 0
+            pmuCfg: SYNCHROPHASOR::PMUConfig {
+              frameType: CONFIG_2_FRAME
+              initialized: True
+              pmuIdx: 0
+              svcClass: 
+              dgnmrMult: 16
+              stationName: PMU1            
+              dataSourceId: 61
+              format: (phasorShape: 1, phasorFormat: 1, analogFormat: 1, freqFormat: 0, _: 0)
+              phnmr: 3
+              annmr: 0
+              dgnmr: 1
+              phnam: [
+                VA              
+                VB              
+                VC              
+              ]
+              annam: []
+              dgnam: [
+                Dig Channel 1   
+                Dig Channel 2   
+                Dig Channel 3   
+                Dig Channel 4   
+                Dig Channel 5   
+                Dig Channel 6   
+                Dig Channel 7   
+                Dig Channel 8   
+                Dig Channel 9   
+                Dig Channel 10  
+                Dig Channel 11  
+                Dig Channel 12  
+                Dig Channel 13  
+                Dig Channel 14  
+                Dig Channel 15  
+                Dig Channel 16  
+              ]
+              phunit: [
+                SYNCHROPHASOR::PhasorConversionFactor {
+                  format: (phunit: 196, phvalue: 4)
+                }
+                SYNCHROPHASOR::PhasorConversionFactor {
+                  format: (phunit: 196, phvalue: 4)
+                }
+                SYNCHROPHASOR::PhasorConversionFactor {
+                  format: (phunit: 196, phvalue: 4)
+                }
+              ]
+              anunit: []
+              digunit: [
+                SYNCHROPHASOR::DigitalStatusMaskWords {
+                  normalStatusMask: 0
+                  validInputsMask: 0
+                }
+              ]
+              fnom: 1
+              cfgcnt: 1
+            }
+            stat: (triggerReason: 0, unlockedTime: 0, pmuTimeQuality: 0, dataModified: 0, configChange: 0, pmuTriggerPickup: 0, dataSortingType: 0, pmuSyncError: 0, dataErrorIndicator: 0)
+            phasors: [
+              SYNCHROPHASOR::PhasorEstimate {
+                polar: SYNCHROPHASOR::PhasorRectangular {
+                  realValFloat: 100.078
+                  imaginaryValFloat: -1.56734
+                }
+              }
+              SYNCHROPHASOR::PhasorEstimate {
+                polar: SYNCHROPHASOR::PhasorRectangular {
+                  realValFloat: 99.9462
+                  imaginaryValFloat: 2.61994
+                }
+              }
+              SYNCHROPHASOR::PhasorEstimate {
+                polar: SYNCHROPHASOR::PhasorRectangular {
+                  realValFloat: 100.01
+                  imaginaryValFloat: 0.526347
+                }
+              }
+            ]
+            freq: SYNCHROPHASOR::FrequencyDeviation {
+              freqDevMhzInt: 0
+            }
+            dfreq: SYNCHROPHASOR::ROCOF {
+              rocofInt: 0
+            }
+            digital: [
+              0
+            ]
+          }
+        ]
+      }
+    }
+    SYNCHROPHASOR::Frame {
+      parseError: False
+      header: SYNCHROPHASOR::FrameHeader {
+        timeStamp: 2008-08-06T11:53:05.000000012Z
+        sync: SYNCHROPHASOR::SyncField {
+          frameType: COMMAND_FRAME
+          version: 1
+        }
+        frameSize: 18
+        dataStreamId: 60
+        fracSec: SYNCHROPHASOR::FracSec {
+          fracSec: 12.3287
+          data: (fracSecRaw: 12328716, qualityIndicator: 0, leapSecPending: 0, leapSecOccurred: 0, leapSecDirection: 0, _: 0)
+        }
+      }
+      _payload: \x00\x01
+      chk: 50444
+      COMMAND_FRAME: SYNCHROPHASOR::CommandFrame {
+        cmd: 1
+        extframe: []
+      }
+    }
+  ]
+}

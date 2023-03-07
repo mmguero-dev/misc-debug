@@ -1,0 +1,601 @@
+{
+  "frms": [
+    {
+      "COMMAND_FRAME": {
+        "cmd": 5,
+        "extframe": []
+      },
+      "_payload": "\\x00\\x05",
+      "chk": 5770,
+      "header": {
+        "dataStreamId": 60,
+        "fracSec": {
+          "data": [
+            9448978,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fracSec": 0
+        },
+        "frameSize": 18,
+        "sync": {
+          "frameType": "COMMAND_FRAME",
+          "version": 1
+        },
+        "timeStamp": 1218023578
+      },
+      "parseError": false
+    },
+    {
+      "CONFIG_FRAME": {
+        "allAnalogNames": [],
+        "allDigitalNames": [
+          "Dig Channel 1   ",
+          "Dig Channel 2   ",
+          "Dig Channel 3   ",
+          "Dig Channel 4   ",
+          "Dig Channel 5   ",
+          "Dig Channel 6   ",
+          "Dig Channel 7   ",
+          "Dig Channel 8   ",
+          "Dig Channel 9   ",
+          "Dig Channel 10  ",
+          "Dig Channel 11  ",
+          "Dig Channel 12  ",
+          "Dig Channel 13  ",
+          "Dig Channel 14  ",
+          "Dig Channel 15  ",
+          "Dig Channel 16  "
+        ],
+        "allPhasorNames": [
+          "VA              ",
+          "VB              ",
+          "VC              "
+        ],
+        "allStationNames": [
+          "PMU1            "
+        ],
+        "cfgNum": false,
+        "contIdx": 0,
+        "dataRate": 50,
+        "initialized": true,
+        "numPMUActual": 1,
+        "numPMUExpected": 1,
+        "pmuCfgs": [
+          {
+            "annam": [],
+            "annmr": 0,
+            "anunit": [],
+            "cfgcnt": 1,
+            "dataSourceId": 61,
+            "dgnam": [
+              "Dig Channel 1   ",
+              "Dig Channel 2   ",
+              "Dig Channel 3   ",
+              "Dig Channel 4   ",
+              "Dig Channel 5   ",
+              "Dig Channel 6   ",
+              "Dig Channel 7   ",
+              "Dig Channel 8   ",
+              "Dig Channel 9   ",
+              "Dig Channel 10  ",
+              "Dig Channel 11  ",
+              "Dig Channel 12  ",
+              "Dig Channel 13  ",
+              "Dig Channel 14  ",
+              "Dig Channel 15  ",
+              "Dig Channel 16  "
+            ],
+            "dgnmr": 1,
+            "dgnmrMult": 16,
+            "digunit": [
+              {
+                "normalStatusMask": 0,
+                "validInputsMask": 0
+              }
+            ],
+            "fnom": 1,
+            "format": [
+              1,
+              1,
+              1,
+              0,
+              0
+            ],
+            "frameType": "CONFIG_2_FRAME",
+            "initialized": true,
+            "phnam": [
+              "VA              ",
+              "VB              ",
+              "VC              "
+            ],
+            "phnmr": 3,
+            "phunit": [
+              {
+                "format": [
+                  196,
+                  4
+                ]
+              },
+              {
+                "format": [
+                  196,
+                  4
+                ]
+              },
+              {
+                "format": [
+                  196,
+                  4
+                ]
+              }
+            ],
+            "pmuIdx": 0,
+            "stationName": "PMU1            ",
+            "svcClass": ""
+          }
+        ],
+        "timeBase": 1000000
+      },
+      "_payload": "\\x00\\x0fB@\\x00\\x01PMU1            \\x00=\\x00\\x07\\x00\\x03\\x00\\x00\\x00\\x01VA              VB              VC              Dig Channel 1   Dig Channel 2   Dig Channel 3   Dig Channel 4   Dig Channel 5   Dig Channel 6   Dig Channel 7   Dig Channel 8   Dig Channel 9   Dig Channel 10  Dig Channel 11  Dig Channel 12  Dig Channel 13  Dig Channel 14  Dig Channel 15  Dig Channel 16  \\x00\\x00\\x04\\xc4\\x00\\x00\\x04\\xc4\\x00\\x00\\x04\\xc4\\x00\\x00\\x00\\x00\\x00\\x01\\x00\\x01\\x002",
+      "chk": 33234,
+      "header": {
+        "dataStreamId": 60,
+        "fracSec": {
+          "data": [
+            520000,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fracSec": 0
+        },
+        "frameSize": 374,
+        "sync": {
+          "frameType": "CONFIG_2_FRAME",
+          "version": 1
+        },
+        "timeStamp": 1217607491
+      },
+      "parseError": false
+    },
+    {
+      "COMMAND_FRAME": {
+        "cmd": 2,
+        "extframe": []
+      },
+      "_payload": "\\x00\\x02",
+      "chk": 63349,
+      "header": {
+        "dataStreamId": 60,
+        "fracSec": {
+          "data": [
+            10235393,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fracSec": 10.235393
+        },
+        "frameSize": 18,
+        "sync": {
+          "frameType": "COMMAND_FRAME",
+          "version": 1
+        },
+        "timeStamp": 1218023578
+      },
+      "parseError": false
+    },
+    {
+      "DATA_FRAME": {
+        "cfgFound": true,
+        "cfgFrame": {
+          "allAnalogNames": [],
+          "allDigitalNames": [
+            "Dig Channel 1   ",
+            "Dig Channel 2   ",
+            "Dig Channel 3   ",
+            "Dig Channel 4   ",
+            "Dig Channel 5   ",
+            "Dig Channel 6   ",
+            "Dig Channel 7   ",
+            "Dig Channel 8   ",
+            "Dig Channel 9   ",
+            "Dig Channel 10  ",
+            "Dig Channel 11  ",
+            "Dig Channel 12  ",
+            "Dig Channel 13  ",
+            "Dig Channel 14  ",
+            "Dig Channel 15  ",
+            "Dig Channel 16  "
+          ],
+          "allPhasorNames": [
+            "VA              ",
+            "VB              ",
+            "VC              "
+          ],
+          "allStationNames": [
+            "PMU1            "
+          ],
+          "cfgNum": false,
+          "contIdx": 0,
+          "dataRate": 50,
+          "initialized": true,
+          "numPMUActual": 1,
+          "numPMUExpected": 1,
+          "pmuCfgs": [
+            {
+              "annam": [],
+              "annmr": 0,
+              "anunit": [],
+              "cfgcnt": 1,
+              "dataSourceId": 61,
+              "dgnam": [
+                "Dig Channel 1   ",
+                "Dig Channel 2   ",
+                "Dig Channel 3   ",
+                "Dig Channel 4   ",
+                "Dig Channel 5   ",
+                "Dig Channel 6   ",
+                "Dig Channel 7   ",
+                "Dig Channel 8   ",
+                "Dig Channel 9   ",
+                "Dig Channel 10  ",
+                "Dig Channel 11  ",
+                "Dig Channel 12  ",
+                "Dig Channel 13  ",
+                "Dig Channel 14  ",
+                "Dig Channel 15  ",
+                "Dig Channel 16  "
+              ],
+              "dgnmr": 1,
+              "dgnmrMult": 16,
+              "digunit": [
+                {
+                  "normalStatusMask": 0,
+                  "validInputsMask": 0
+                }
+              ],
+              "fnom": 1,
+              "format": [
+                1,
+                1,
+                1,
+                0,
+                0
+              ],
+              "frameType": "CONFIG_2_FRAME",
+              "initialized": true,
+              "phnam": [
+                "VA              ",
+                "VB              ",
+                "VC              "
+              ],
+              "phnmr": 3,
+              "phunit": [
+                {
+                  "format": [
+                    196,
+                    4
+                  ]
+                },
+                {
+                  "format": [
+                    196,
+                    4
+                  ]
+                },
+                {
+                  "format": [
+                    196,
+                    4
+                  ]
+                }
+              ],
+              "pmuIdx": 0,
+              "stationName": "PMU1            ",
+              "svcClass": ""
+            }
+          ],
+          "timeBase": 1000000
+        },
+        "data": [
+          {
+            "dfreq": {
+              "rocofInt": 0
+            },
+            "digital": [
+              0
+            ],
+            "freq": {
+              "freqDevMhzInt": 0
+            },
+            "initialized": true,
+            "phasors": [
+              {
+                "polar": {
+                  "imaginaryValFloat": -1.5673449039459229,
+                  "realValFloat": 100.07758331298828
+                }
+              },
+              {
+                "polar": {
+                  "imaginaryValFloat": 2.619943380355835,
+                  "realValFloat": 99.94623565673828
+                }
+              },
+              {
+                "polar": {
+                  "imaginaryValFloat": 0.5263471603393555,
+                  "realValFloat": 100.00989532470703
+                }
+              }
+            ],
+            "pmuCfg": {
+              "annam": [],
+              "annmr": 0,
+              "anunit": [],
+              "cfgcnt": 1,
+              "dataSourceId": 61,
+              "dgnam": [
+                "Dig Channel 1   ",
+                "Dig Channel 2   ",
+                "Dig Channel 3   ",
+                "Dig Channel 4   ",
+                "Dig Channel 5   ",
+                "Dig Channel 6   ",
+                "Dig Channel 7   ",
+                "Dig Channel 8   ",
+                "Dig Channel 9   ",
+                "Dig Channel 10  ",
+                "Dig Channel 11  ",
+                "Dig Channel 12  ",
+                "Dig Channel 13  ",
+                "Dig Channel 14  ",
+                "Dig Channel 15  ",
+                "Dig Channel 16  "
+              ],
+              "dgnmr": 1,
+              "dgnmrMult": 16,
+              "digunit": [
+                {
+                  "normalStatusMask": 0,
+                  "validInputsMask": 0
+                }
+              ],
+              "fnom": 1,
+              "format": [
+                1,
+                1,
+                1,
+                0,
+                0
+              ],
+              "frameType": "CONFIG_2_FRAME",
+              "initialized": true,
+              "phnam": [
+                "VA              ",
+                "VB              ",
+                "VC              "
+              ],
+              "phnmr": 3,
+              "phunit": [
+                {
+                  "format": [
+                    196,
+                    4
+                  ]
+                },
+                {
+                  "format": [
+                    196,
+                    4
+                  ]
+                },
+                {
+                  "format": [
+                    196,
+                    4
+                  ]
+                }
+              ],
+              "pmuIdx": 0,
+              "stationName": "PMU1            ",
+              "svcClass": ""
+            },
+            "pmuFound": true,
+            "pmuIdx": 0,
+            "stat": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "initialized": true,
+        "numPMUActual": 1,
+        "numPMUExpected": 1
+      },
+      "_payload": "\\x00\\x00B\\xc8'\\xb9\\xbf\\xc8\\x9e\\xc2B\\xc7\\xe4y@'\\xad'B\\xc8\\x05\\x11?\\x06\\xbe\\xb0\\x00\\x00\\x00\\x00\\x00\\x00",
+      "chk": 6812,
+      "header": {
+        "dataStreamId": 60,
+        "fracSec": {
+          "data": [
+            580000,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fracSec": 0.58
+        },
+        "frameSize": 48,
+        "sync": {
+          "frameType": "DATA_FRAME",
+          "version": 1
+        },
+        "timeStamp": 1217607491
+      },
+      "parseError": false
+    },
+    {
+      "COMMAND_FRAME": {
+        "cmd": 1,
+        "extframe": []
+      },
+      "_payload": "\\x00\\x01",
+      "chk": 50444,
+      "header": {
+        "dataStreamId": 60,
+        "fracSec": {
+          "data": [
+            12328716,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fracSec": 12.328716
+        },
+        "frameSize": 18,
+        "sync": {
+          "frameType": "COMMAND_FRAME",
+          "version": 1
+        },
+        "timeStamp": 1218023585
+      },
+      "parseError": false
+    }
+  ],
+  "streamSourceIdConfigFrameMap": [
+    [
+      60,
+      {
+        "allAnalogNames": [],
+        "allDigitalNames": [
+          "Dig Channel 1   ",
+          "Dig Channel 2   ",
+          "Dig Channel 3   ",
+          "Dig Channel 4   ",
+          "Dig Channel 5   ",
+          "Dig Channel 6   ",
+          "Dig Channel 7   ",
+          "Dig Channel 8   ",
+          "Dig Channel 9   ",
+          "Dig Channel 10  ",
+          "Dig Channel 11  ",
+          "Dig Channel 12  ",
+          "Dig Channel 13  ",
+          "Dig Channel 14  ",
+          "Dig Channel 15  ",
+          "Dig Channel 16  "
+        ],
+        "allPhasorNames": [
+          "VA              ",
+          "VB              ",
+          "VC              "
+        ],
+        "allStationNames": [
+          "PMU1            "
+        ],
+        "cfgNum": false,
+        "contIdx": 0,
+        "dataRate": 50,
+        "initialized": true,
+        "numPMUActual": 1,
+        "numPMUExpected": 1,
+        "pmuCfgs": [
+          {
+            "annam": [],
+            "annmr": 0,
+            "anunit": [],
+            "cfgcnt": 1,
+            "dataSourceId": 61,
+            "dgnam": [
+              "Dig Channel 1   ",
+              "Dig Channel 2   ",
+              "Dig Channel 3   ",
+              "Dig Channel 4   ",
+              "Dig Channel 5   ",
+              "Dig Channel 6   ",
+              "Dig Channel 7   ",
+              "Dig Channel 8   ",
+              "Dig Channel 9   ",
+              "Dig Channel 10  ",
+              "Dig Channel 11  ",
+              "Dig Channel 12  ",
+              "Dig Channel 13  ",
+              "Dig Channel 14  ",
+              "Dig Channel 15  ",
+              "Dig Channel 16  "
+            ],
+            "dgnmr": 1,
+            "dgnmrMult": 16,
+            "digunit": [
+              {
+                "normalStatusMask": 0,
+                "validInputsMask": 0
+              }
+            ],
+            "fnom": 1,
+            "format": [
+              1,
+              1,
+              1,
+              0,
+              0
+            ],
+            "frameType": "CONFIG_2_FRAME",
+            "initialized": true,
+            "phnam": [
+              "VA              ",
+              "VB              ",
+              "VC              "
+            ],
+            "phnmr": 3,
+            "phunit": [
+              {
+                "format": [
+                  196,
+                  4
+                ]
+              },
+              {
+                "format": [
+                  196,
+                  4
+                ]
+              },
+              {
+                "format": [
+                  196,
+                  4
+                ]
+              }
+            ],
+            "pmuIdx": 0,
+            "stationName": "PMU1            ",
+            "svcClass": ""
+          }
+        ],
+        "timeBase": 1000000
+      }
+    ]
+  ]
+}

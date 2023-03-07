@@ -1,0 +1,12 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	synchrophasor_cmd
+#open	2023-03-07-14-36-03
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	proto	frame_type	command	extframe
+#types	time	string	addr	port	addr	port	string	string	string	vector[count]
+1218023578.568431	CbroLJ1aUIO6OyD1a9	192.168.0.10	4712	192.168.0.60	4713	udp	Command	Send CFG-2	(empty)
+1218023578.622812	CbroLJ1aUIO6OyD1a9	192.168.0.10	4712	192.168.0.60	4713	udp	Command	Data on	(empty)
+1218023585.746411	CbroLJ1aUIO6OyD1a9	192.168.0.10	4712	192.168.0.60	4713	udp	Command	Data off	(empty)
+#close	2023-03-07-14-36-03

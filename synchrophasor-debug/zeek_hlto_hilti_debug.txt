@@ -1,0 +1,16 @@
+[zeek] Registering TCP protocol analyzer spicy_SYNCHROPHASOR_TCP with Zeek
+[zeek]   Scheduling analyzer for port 4712/tcp
+[zeek] Registering UDP protocol analyzer spicy_SYNCHROPHASOR_UDP with Zeek
+[zeek]   Scheduling analyzer for port 4713/udp
+[zeek] Done with post-script initialization
+[zeek] confirming protocol 116/0
+[zeek] [SPICY_SYNCHROPHASOR_UDP/3/orig] -> event SYNCHROPHASOR::CommandFrame($conn, $is_orig, FrameTypeCode::COMMAND_FRAME, 2008-08-06T11:52:58.000000000Z, 18, 5770, 1, 60, 5, [])
+[zeek] confirming protocol 116/0
+[zeek] [SPICY_SYNCHROPHASOR_UDP/3/resp] -> event SYNCHROPHASOR::ConfigFrame($conn, $is_orig, FrameTypeCode::CONFIG_2_FRAME, 2008-08-01T16:18:11.000000000Z, 374, 33234, 1, 60, true, 1000000, 0, 1, 1, 50, ["PMU1            "], ["VA              ", "VB              ", "VC              "], [], ["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "])
+[zeek] confirming protocol 116/0
+[zeek] [SPICY_SYNCHROPHASOR_UDP/3/orig] -> event SYNCHROPHASOR::CommandFrame($conn, $is_orig, FrameTypeCode::COMMAND_FRAME, 2008-08-06T11:52:58.000000000Z, 18, 63349, 1, 60, 2, [])
+[zeek] confirming protocol 116/0
+[zeek] [SPICY_SYNCHROPHASOR_UDP/3/resp] -> event SYNCHROPHASOR::DataFrame($conn, $is_orig, FrameTypeCode::DATA_FRAME, 2008-08-01T16:18:11.000000000Z, 48, 6812, 1, 60, false, 0, 16)
+[zeek] confirming protocol 116/0
+[zeek] [SPICY_SYNCHROPHASOR_UDP/3/orig] -> event SYNCHROPHASOR::CommandFrame($conn, $is_orig, FrameTypeCode::COMMAND_FRAME, 2008-08-06T11:53:05.000000000Z, 18, 50444, 1, 60, 1, [])
+[zeek] Shutting down Spicy runtime
