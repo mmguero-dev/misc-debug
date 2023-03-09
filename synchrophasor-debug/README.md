@@ -140,7 +140,7 @@ The `zeek_dump_events.txt` which is just another way of looking at the same thin
                   [10] numPMUActual: count = 16
 ```
 
-### `print` statement Output
+### debugging with `print` statement Output
 
 With Zeek and the PCAP vs with spicy-driver (line-by-line). I put a `print self;` statement in the `%on done` section of the `Frame`.
 
@@ -200,7 +200,6 @@ With Zeek and the PCAP vs with spicy-driver (line-by-line). I put a `print self;
 [$parseError=False, $header=[$timeStamp=2008-08-01T16:18:11.580000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0.58, $data=(580000, 0, 0, 0, 0, 0)]], $_payload=b"\x00\x00B\xc8'\xb9\xbf\xc8\x9e\xc2B\xc7\xe4y@'\xad'B\xc8\x05\x11?\x06\xbe\xb0\x00\x00\x00\x00\x00\x00", $chk=6812, $DATA_FRAME=[$initialized=True, $cfgFrame=[$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50], $cfgFound=True, $numPMUExpected=1, $numPMUActual=1, $data=[[$initialized=True, $pmuFound=True, $pmuIdx=0, $pmuCfg=[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1], $stat=(0, 0, 0, 0, 0, 0, 0, 0, 0), $phasors=[[$rectangular=(not set), $polar=[$realValInt=(not set), $realValFloat=100.078, $imaginaryValInt=(not set), $imaginaryValFloat=-1.56734]], [$rectangular=(not set), $polar=[$realValInt=(not set), $realValFloat=99.9462, $imaginaryValInt=(not set), $imaginaryValFloat=2.61994]], [$rectangular=(not set), $polar=[$realValInt=(not set), $realValFloat=100.01, $imaginaryValInt=(not set), $imaginaryValFloat=0.526347]]], $freq=[$freqDevMhzInt=0, $freqDevMhzFloat=(not set)], $dfreq=[$rocofInt=0, $rocofFloat=(not set)], $analog=(not set), $digital=[0]]]], $HEADER_FRAME=(not set), $COMMAND_FRAME=(not set), $CONFIG_FRAME=(not set)]
 ```
 
-
 * "data transmission on" command frame
     - `zeek` and `spicy-driver` output do not match exactly, but they are very close
     - the part that seems to be different is the `$fracSec` was not calculated, which implies my `map` of frames based on `dataStreamId` maybe didn't get looked up correctly in the `FracSec` `on %done` hook
@@ -215,6 +214,210 @@ With Zeek and the PCAP vs with spicy-driver (line-by-line). I put a `print self;
 
 ```
 [$parseError=False, $header=[$timeStamp=2008-08-06T11:53:17.328716000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=12.3287, $data=(12328716, 0, 0, 0, 0, 0)]], $_payload=b"\x00\x01", $chk=50444, $DATA_FRAME=(not set), $HEADER_FRAME=(not set), $COMMAND_FRAME=[$cmd=1, $extframe=[]], $CONFIG_FRAME=(not set)]
+```
+
+#### further investigation
+
+Given that the lookup of `dataStreamId` in the `streamSourceIdConfigFrameMap` seems to be the issue, I've added in `print` statements (location, `header` and `frms.streamSourceIdConfigFrameMap`) around anywhere that's used:
+
+**`spicy-driver` output**:
+
+* initial lookup via COMMAND_FRAME to get fracSec units
+    - Fails, which is actually expected here, because we haven't yet even seen a config frame to populate the map yet.
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-06T11:52:58.000000000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(9448978, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* lookup of `FracSec` in header of CONFIG_2_FRAME
+    - Also fails, because we haven't parsed the CONFIG_2_FRAME yet, so this is expected.
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::CONFIG_2_FRAME, $version=1], $frameSize=374, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(520000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* `done` parsing the ConfigFrame unit
+    - note that the map seems good at this point: `60` points to a correctly initialized `ConfigFrame` (set via `self` in this `done` hook)
+
+```
+done in ConfigFrame unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::CONFIG_2_FRAME, $version=1], $frameSize=374, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(520000, 0, 0, 0, 0, 0)]]
+{60: [$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50]}
+---------------------------
+```
+
+* lookup of `FracSec` in header of COMMAND_FRAME
+    - everything looks good here: the map looks as it should, and the `print self` we see in a minute does have the fractional seconds in it
+```
+done in FracSec unit
+[$timeStamp=2008-08-06T11:52:58.000000000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(10235393, 0, 0, 0, 0, 0)]]
+{60: [$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50]}
+---------------------------
+```
+
+* lookup of `FracSec` in header of DATA_FRAME
+    - everything looks good here: the map looks as it should
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{60: [$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50]}
+---------------------------
+```
+
+* stat field hook in PMUData unit to look up config map based on stream ID
+    - everything looks good here: the map looks as it should. and we can tell when the `print self;` happens that the data got intepreted correctly based on the lookup
+
+```
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.580000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0.58, $data=(580000, 0, 0, 0, 0, 0)]]
+{60: [$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50]}
+---------------------------
+```
+
+* lookup of `FracSec` in header of COMMAND_FRAME
+    - everything looks good here: the map looks as it should, and the `print self` we see in a minute does have the fractional seconds in it
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-06T11:53:05.000000000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(12328716, 0, 0, 0, 0, 0)]]
+{60: [$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50]}
+---------------------------
+```
+
+**`zeek` output**:
+
+* initial lookup via COMMAND_FRAME to get fracSec units
+    - Fails, which is actually expected here, because we haven't yet even seen a config frame to populate the map yet.
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-06T11:52:58.000000000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(9448978, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* lookup of `FracSec` in header of CONFIG_2_FRAME
+    - Also fails, because we haven't parsed the CONFIG_2_FRAME yet, so this is expected.
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::CONFIG_2_FRAME, $version=1], $frameSize=374, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(520000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* `done` parsing the ConfigFrame unit
+    - note that the map seems good at this point: `60` points to a correctly initialized `ConfigFrame` (set via `self` in this `done` hook)
+
+```
+done in ConfigFrame unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::CONFIG_2_FRAME, $version=1], $frameSize=374, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(520000, 0, 0, 0, 0, 0)]]
+{60: [$initialized=True, $cfgNum=False, $timeBase=1000000, $contIdx=0, $numPMUActual=1, $allStationNames=["PMU1            "], $allPhasorNames=["VA              ", "VB              ", "VC              "], $allAnalogNames=[], $allDigitalNames=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $numPMUExpected=1, $pmuCfgs=[[$frameType=FrameTypeCode::CONFIG_2_FRAME, $initialized=True, $pmuIdx=0, $svcClass="", $dgnmrMult=16, $stationName="PMU1            ", $dataSourceId=61, $globalPMUID=(not set), $format=(1, 1, 1, 0, 0), $phnmr=3, $annmr=0, $dgnmr=1, $phnam=["VA              ", "VB              ", "VC              "], $annam=[], $dgnam=["Dig Channel 1   ", "Dig Channel 2   ", "Dig Channel 3   ", "Dig Channel 4   ", "Dig Channel 5   ", "Dig Channel 6   ", "Dig Channel 7   ", "Dig Channel 8   ", "Dig Channel 9   ", "Dig Channel 10  ", "Dig Channel 11  ", "Dig Channel 12  ", "Dig Channel 13  ", "Dig Channel 14  ", "Dig Channel 15  ", "Dig Channel 16  "], $phunit=[[$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)], [$format=(196, 4), $flags=(not set), $typeInd=(not set), $userDef=(not set), $scaleFactor=(not set), $angleAdj=(not set)]], $anunit=[], $digunit=[[$normalStatusMask=0, $validInputsMask=0]], $pmuLat=(not set), $pmuLon=(not set), $pmuElev=(not set), $window=(not set), $groupDelay=(not set), $fnom=1, $cfgcnt=1]], $dataRate=50]}
+---------------------------
+```
+
+* lookup of `FracSec` in header of COMMAND_FRAME
+    - well there's the smoking gun, we've completely lost streamSourceIdConfigFrameMap
+```
+done in FracSec unit
+[$timeStamp=2008-08-06T11:52:58.000000000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(10235393, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* lookup of `FracSec` in header of DATA_FRAME
+    - and we're hosed
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* stat field hook in PMUData unit to look up config map based on stream ID
+
+```
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+stat field hook in PMUData unit
+[$timeStamp=2008-08-01T16:18:11.000000000Z, $sync=[$frameType=FrameTypeCode::DATA_FRAME, $version=1], $frameSize=48, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(580000, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
+```
+
+* lookup of `FracSec` in header of COMMAND_FRAME
+
+```
+done in FracSec unit
+[$timeStamp=2008-08-06T11:53:05.000000000Z, $sync=[$frameType=FrameTypeCode::COMMAND_FRAME, $version=1], $frameSize=18, $dataStreamId=60, $fracSec=[$fracSec=0, $data=(12328716, 0, 0, 0, 0, 0)]]
+{}
+---------------------------
 ```
 
 ### Other Observations
