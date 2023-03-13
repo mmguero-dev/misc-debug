@@ -33,7 +33,7 @@ server_script = <<-SHELL
     export INSTALL_K3S_EXEC="--bind-address=#{server_ip} --node-external-ip=#{server_ip} --flannel-iface=eth1"
     curl -sfL https://get.k3s.io | sh -
     echo "Waiting for k3s to start..."
-    sleep 20
+    sleep 30
     until [ -f /var/lib/rancher/k3s/server/token ] && [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 5; done
     cp -v /var/lib/rancher/k3s/server/token /vagrant_shared
     cp -v /etc/rancher/k3s/k3s.yaml /vagrant_shared
@@ -57,6 +57,8 @@ agent_script = <<-SHELL
     export K3S_TOKEN_FILE=/vagrant_shared/token
     export K3S_URL=https://#{server_ip}:6443
     export INSTALL_K3S_EXEC="--flannel-iface=eth1"
+    echo "Waiting for k3s server..."
+    until [ -f /vagrant_shared/token ]; do sleep 5; done
     curl -sfL https://get.k3s.io | sh -
   SHELL
 
