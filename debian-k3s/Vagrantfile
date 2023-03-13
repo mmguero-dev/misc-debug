@@ -1,0 +1,130 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+server_ip = "192.168.56.10"
+
+agents = { "agent1" => "192.168.56.11",
+           "agent2" => "192.168.56.12" }
+
+# Extra parameters in INSTALL_K3S_EXEC variable because of
+# K3s picking up the wrong interface when starting server and agent
+# https://github.com/alexellis/k3sup/issues/306
+
+# kubectl --kubeconfig shared/k3s.yaml -o wide get nodes
+
+server_script = <<-SHELL
+    sudo -i
+    apt-get -qqy update
+    apt-get -y install --no-install-recommends \
+      apt-transport-https \
+      bat \
+      ca-certificates \
+      curl \
+      fd-find \
+      git \
+      gnupg2 \
+      jq \
+      moreutils \
+      ripgrep \
+      software-properties-common
+    export INSTALL_K3S_EXEC="--bind-address=#{server_ip} --node-external-ip=#{server_ip} --flannel-iface=eth1"
+    curl -sfL https://get.k3s.io | sh -
+    echo "Waiting for k3s to start..."
+    sleep 20
+    until [ -f /var/lib/rancher/k3s/server/token ] && [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 5; done
+    cp -v /var/lib/rancher/k3s/server/token /vagrant_shared
+    cp -v /etc/rancher/k3s/k3s.yaml /vagrant_shared
+  SHELL
+
+agent_script = <<-SHELL
+    sudo -i
+    apt-get -qqy update
+    apt-get -y install --no-install-recommends \
+      apt-transport-https \
+      bat \
+      ca-certificates \
+      curl \
+      fd-find \
+      git \
+      gnupg2 \
+      jq \
+      moreutils \
+      ripgrep \
+      software-properties-common
+    export K3S_TOKEN_FILE=/vagrant_shared/token
+    export K3S_URL=https://#{server_ip}:6443
+    export INSTALL_K3S_EXEC="--flannel-iface=eth1"
+    curl -sfL https://get.k3s.io | sh -
+  SHELL
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/debian-11"
+
+  config.vm.define "server", primary: true do |server|
+    server.vm.network "private_network", ip: server_ip
+    server.vm.network :forwarded_port, guest: 6443, host: 6443
+    for p in 30000..30100
+        server.vm.network :forwarded_port, guest: p, host: p, protocol: "tcp"
+    end
+    server.vm.synced_folder '.', '/vagrant', disabled: true
+    server.vm.synced_folder "./shared", "/vagrant_shared", type: "sshfs", disabled: false
+    server.vm.hostname = "server"
+    server.vm.provider "libvirt" do |lv|
+      lv.cpus                          = 4
+      lv.cputopology :sockets => '2', :cores => '2', :threads => '1'
+      lv.disk_bus                      = "virtio"
+      lv.driver                        = "kvm"
+      lv.graphics_type                 = "spice"
+      lv.machine_arch                  = 'x86_64'
+      lv.machine_type                  = "q35"
+      lv.memory                        = 16384
+      lv.nested                        = true
+      lv.nic_model_type                = "virtio"
+      lv.sound_type                    = "ich6"
+      lv.video_type                    = "qxl"
+      lv.management_network_guest_ipv6 = 'no'
+
+      lv.cpu_mode = 'host-model'
+      lv.cpu_fallback = 'forbid'
+
+      lv.channel :type  => 'spicevmc', :target_name => 'com.redhat.spice.0',     :target_type => 'virtio'
+      lv.channel :type  => 'unix',     :target_name => 'org.qemu.guest_agent.0', :target_type => 'virtio'
+      lv.random  :model => 'random'
+    end
+
+    server.vm.provision "shell", inline: server_script
+  end
+
+  agents.each do |agent_name, agent_ip|
+    config.vm.define agent_name do |agent|
+      agent.vm.network "private_network", ip: agent_ip
+      agent.vm.synced_folder '.', '/vagrant', disabled: true
+      agent.vm.synced_folder "./shared", "/vagrant_shared", type: "sshfs", disabled: false
+      agent.vm.hostname = agent_name
+      agent.vm.provider "libvirt" do |lv|
+        lv.cpus                          = 4
+        lv.cputopology :sockets => '2', :cores => '2', :threads => '1'
+        lv.disk_bus                      = "virtio"
+        lv.driver                        = "kvm"
+        lv.graphics_type                 = "spice"
+        lv.machine_arch                  = 'x86_64'
+        lv.machine_type                  = "q35"
+        lv.memory                        = 16384
+        lv.nested                        = true
+        lv.nic_model_type                = "virtio"
+        lv.sound_type                    = "ich6"
+        lv.video_type                    = "qxl"
+        lv.management_network_guest_ipv6 = 'no'
+
+        lv.cpu_mode = 'host-model'
+        lv.cpu_fallback = 'forbid'
+
+        lv.channel :type  => 'spicevmc', :target_name => 'com.redhat.spice.0',     :target_type => 'virtio'
+        lv.channel :type  => 'unix',     :target_name => 'org.qemu.guest_agent.0', :target_type => 'virtio'
+        lv.random  :model => 'random'
+      end
+      agent.vm.provision "shell", inline: agent_script
+    end
+  end
+end
+
