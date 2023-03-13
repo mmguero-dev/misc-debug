@@ -11,6 +11,9 @@ agents = { "agent1" => "192.168.56.11",
 # https://github.com/alexellis/k3sup/issues/306
 
 # kubectl --kubeconfig shared/k3s.yaml -o wide get nodes
+# kubectl --kubeconfig shared/k3s.yaml create configmap hello-world --from-file hello-world/index.html
+# kubectl --kubeconfig shared/k3s.yaml apply -f hello-world/hello-world.yml
+# curl 192.168.56.10
 
 server_script = <<-SHELL
     sudo -i
