@@ -9,3 +9,15 @@ kubectl --kubeconfig shared/k3s.yaml create configmap etc-nginx-catrust --from-f
 kubectl --kubeconfig shared/k3s.yaml create configmap etc-nginx-certs --from-file nginx-ldap/nginx/certs --namespace nginx-ldap
 kubectl --kubeconfig shared/k3s.yaml create configmap etc-nginx-certs-pem --from-file nginx-ldap/nginx/certs/dhparam.pem --namespace nginx-ldap
 kubectl --kubeconfig shared/k3s.yaml apply -f nginx-ldap/nginx-k3s.yml
+sleep 5
+echo '--- nodes ---------------------------------------------------------------'
+kubectl --kubeconfig shared/k3s.yaml -o wide get nodes
+echo '--- ingresses -----------------------------------------------------------'
+kubectl --kubeconfig shared/k3s.yaml -o wide get ingress --namespace nginx-ldap
+echo '--- services ------------------------------------------------------------'
+kubectl --kubeconfig shared/k3s.yaml -o wide get service --namespace nginx-ldap
+echo '--- pods ----------------------------------------------------------------'
+kubectl --kubeconfig shared/k3s.yaml -o wide get pods --namespace nginx-ldap
+echo '--- configmaps ----------------------------------------------------------'
+kubectl --kubeconfig shared/k3s.yaml -o wide get configmap --namespace nginx-ldap
+echo '-------------------------------------------------------------------------'
