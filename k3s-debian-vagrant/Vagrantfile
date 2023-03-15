@@ -30,11 +30,13 @@ server_script = <<-SHELL
       moreutils \
       ripgrep \
       software-properties-common
-    export INSTALL_K3S_EXEC="--bind-address=#{server_ip} --node-external-ip=#{server_ip} --flannel-iface=eth1"
+    export INSTALL_K3S_EXEC="server --disable traefik --bind-address=#{server_ip} --node-external-ip=#{server_ip} --flannel-iface=eth1"
     curl -sfL https://get.k3s.io | sh -
     echo "Waiting for k3s to start..."
     sleep 30
     until [ -f /var/lib/rancher/k3s/server/token ] && [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 5; done
+    mkdir -p /var/lib/rancher/k3s/server/manifests
+    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
     cp -v /var/lib/rancher/k3s/server/token /vagrant_shared
     cp -v /etc/rancher/k3s/k3s.yaml /vagrant_shared
   SHELL
@@ -74,30 +76,21 @@ Vagrant.configure("2") do |config|
     server.vm.synced_folder '.', '/vagrant', disabled: true
     server.vm.synced_folder "./shared", "/vagrant_shared", type: "sshfs", disabled: false
     server.vm.hostname = "server"
+    server.vm.provider "virtualbox" do |vb|
+      vb.cpus   = 2
+      vb.memory = 8192
+    end
     server.vm.provider "libvirt" do |lv|
-      lv.cpus                          = 4
-      lv.cputopology :sockets => '2', :cores => '2', :threads => '1'
-      lv.disk_bus                      = "virtio"
-      lv.driver                        = "kvm"
-      lv.graphics_type                 = "spice"
-      lv.machine_arch                  = 'x86_64'
-      lv.machine_type                  = "q35"
-      lv.memory                        = 16384
-      lv.nested                        = true
-      lv.nic_model_type                = "virtio"
-      lv.sound_type                    = "ich6"
-      lv.video_type                    = "qxl"
-      lv.management_network_guest_ipv6 = 'no'
-
-      lv.cpu_mode = 'host-model'
-      lv.cpu_fallback = 'forbid'
-
-      lv.channel :type  => 'spicevmc', :target_name => 'com.redhat.spice.0',     :target_type => 'virtio'
-      lv.channel :type  => 'unix',     :target_name => 'org.qemu.guest_agent.0', :target_type => 'virtio'
-      lv.random  :model => 'random'
+      lv.cpus   = 2
+      lv.memory = 8192
     end
 
+    server.vm.provision "file", source: "./ingress-nginx.yaml", destination: "/tmp/ingress-nginx.yaml"
     server.vm.provision "shell", inline: server_script
+    server.vm.provision "shell" do |s|
+      s.inline = "cp -v /tmp/ingress-nginx.yaml /var/lib/rancher/k3s/server/manifests/ingress-nginx.yaml"
+      s.privileged = true
+    end
   end
 
   agents.each do |agent_name, agent_ip|
@@ -106,27 +99,13 @@ Vagrant.configure("2") do |config|
       agent.vm.synced_folder '.', '/vagrant', disabled: true
       agent.vm.synced_folder "./shared", "/vagrant_shared", type: "sshfs", disabled: false
       agent.vm.hostname = agent_name
+      agent.vm.provider "virtualbox" do |vb|
+        vb.cpus   = 2
+        vb.memory = 8192
+      end
       agent.vm.provider "libvirt" do |lv|
-        lv.cpus                          = 4
-        lv.cputopology :sockets => '2', :cores => '2', :threads => '1'
-        lv.disk_bus                      = "virtio"
-        lv.driver                        = "kvm"
-        lv.graphics_type                 = "spice"
-        lv.machine_arch                  = 'x86_64'
-        lv.machine_type                  = "q35"
-        lv.memory                        = 16384
-        lv.nested                        = true
-        lv.nic_model_type                = "virtio"
-        lv.sound_type                    = "ich6"
-        lv.video_type                    = "qxl"
-        lv.management_network_guest_ipv6 = 'no'
-
-        lv.cpu_mode = 'host-model'
-        lv.cpu_fallback = 'forbid'
-
-        lv.channel :type  => 'spicevmc', :target_name => 'com.redhat.spice.0',     :target_type => 'virtio'
-        lv.channel :type  => 'unix',     :target_name => 'org.qemu.guest_agent.0', :target_type => 'virtio'
-        lv.random  :model => 'random'
+        lv.cpus   = 2
+        lv.memory = 8192
       end
       agent.vm.provision "shell", inline: agent_script
     end
