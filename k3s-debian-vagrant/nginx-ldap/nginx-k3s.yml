@@ -1,33 +1,12 @@
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: ingress-nginx-controller-loadbalancer
-  namespace: ingress-nginx
-spec:
-  selector:
-    app.kubernetes.io/component: controller
-    app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/name: ingress-nginx
-  ports:
-    - name: http
-      port: 80
-      protocol: TCP
-      targetPort: 80
-    - name: https
-      port: 443
-      protocol: TCP
-      targetPort: 443
-  type: LoadBalancer
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nginx-ldap
+  name: nginx-ingress
+  namespace: nginx-ldap
   annotations:
     kubernetes.io/ingress.class: "nginx"
-    #nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
   - http:
@@ -36,55 +15,63 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: nginx-ldap
+            name: whoami-service
             port:
-              number: 8000
+              number: 80
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-ldap
+  name: nginx-ldap-service
+  namespace: nginx-ldap
 spec:
   ports:
     - port: 8000
       protocol: TCP
   selector:
-    app:  nginx-ldap
+    app: nginx-ldap-app
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: whoami
+  name: whoami-service
+  namespace: nginx-ldap
 spec:
   ports:
     - port: 80
       protocol: TCP
   selector:
-    app:  nginx-ldap
+    app: nginx-ldap-app
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-ldap-nginx
+  name: nginx-ldap-app
+  namespace: nginx-ldap
 spec:
   selector:
     matchLabels:
-      app: nginx-ldap
+      app: nginx-ldap-app
   replicas: 2
   template:
     metadata:
       labels:
-        app: nginx-ldap
+        app: nginx-ldap-app
     spec:
       containers:
-      - name: whoami
+      - name: whoami-container
         image: traefik/whoami:latest
+        imagePullPolicy: Always
         ports:
           - containerPort: 80
-      - name: nginx-ldap
+      - name: nginx-ldap-container
         image: docker.io/mmguero/nginx-ldap:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 8000
+          - containerPort: 8000
         env:
           - name: PUID
             value: '1000'
