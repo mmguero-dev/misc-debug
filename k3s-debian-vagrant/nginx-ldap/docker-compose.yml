@@ -43,7 +43,7 @@ services:
       # - ./nginx:/etc/nginx/configmap:ro
       - ./nginx/nginx.conf:/etc/nginx/configmap/nginx.conf:ro
       - ./nginx/nginx_ldap.conf:/etc/nginx/configmap/nginx_ldap.conf:ro
-      - ./nginx/htpasswd:/etc/nginx/configmap/.htpasswd:ro
+      - ./nginx/htpasswd:/etc/nginx/configmap/htpasswd:ro
       - ./nginx/ca-trust:/etc/nginx/ca-trust/configmap:ro
       - ./nginx/certs:/etc/nginx/certs/configmap:ro
       - ./nginx/certs/dhparam.pem:/etc/nginx/dhparam/configmap/dhparam.pem:ro
