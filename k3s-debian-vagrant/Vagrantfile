@@ -35,8 +35,10 @@ server_script = <<-SHELL
     curl -sfL https://get.k3s.io | sh -
     echo "Waiting for k3s to start..."
     sleep 30
+    curl -sSL -o /tmp/deploy_nginx.yaml https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
+    sed -i "/\\/nginx-ingress-controller$/a \\ \\ \\ \\ \\ \\ \\ \\ - --enable-ssl-passthrough" /tmp/deploy_nginx.yaml
+    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml apply -f /tmp/deploy_nginx.yaml
     until [ -f /var/lib/rancher/k3s/server/token ] && [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 5; done
-    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
     cp -v /var/lib/rancher/k3s/server/token /vagrant_shared
     cp -v /etc/rancher/k3s/k3s.yaml /vagrant_shared
   SHELL
@@ -66,6 +68,7 @@ agent_script = <<-SHELL
 
 Vagrant.configure("2") do |config|
   config.vm.box = "bento/debian-11"
+  config.ssh.config = "ssh_config"
 
   config.vm.define "server", primary: true do |server|
     server.vm.network "private_network", ip: server_ip
@@ -85,12 +88,12 @@ Vagrant.configure("2") do |config|
       lv.memory = 8192
     end
 
-    server.vm.provision "file", source: "./ingress-nginx.yaml", destination: "/tmp/ingress-nginx.yaml"
     server.vm.provision "shell", inline: server_script
-    server.vm.provision "shell" do |s|
-      s.inline = "mkdir -p /var/lib/rancher/k3s/server/manifests/ && cp -v /tmp/ingress-nginx.yaml /var/lib/rancher/k3s/server/manifests/ingress-nginx.yaml"
-      s.privileged = true
-    end
+    # server.vm.provision "file", source: "./ingress-nginx.yaml", destination: "/tmp/ingress-nginx.yaml"
+    # server.vm.provision "shell" do |s|
+    #   s.inline = "mkdir -p /var/lib/rancher/k3s/server/manifests/ && cp -v /tmp/ingress-nginx.yaml /var/lib/rancher/k3s/server/manifests/ingress-nginx.yaml"
+    #   s.privileged = true
+    # end
   end
 
   agents.each do |agent_name, agent_ip|
