@@ -7,12 +7,12 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/backend-protocol: "https"
-    # nginx.ingress.kubernetes.io/preserve-trailing-slash: "true"
-    # nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/preserve-trailing-slash: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "false"
 spec:
   rules:
-    # - host: server.k3s.internal
-    - http:
+  # - host: server.k3s.internal
+  - http:
       paths:
       - path: /
         pathType: Prefix
