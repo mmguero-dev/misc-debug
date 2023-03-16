@@ -34,7 +34,7 @@ while getopts 'vm:' OPTION; do
 done
 shift "$(($OPTIND -1))"
 
-K3S_CFG="${MALCOLM_PATH}"/kubernetes/01-malcolm.yml
+K3S_CFG="${SCRIPT_PATH}"/shared/k3s.yaml
 K8S_NAMESPACE=malcolm
 K8S_APP=malcolm-app
 GET_OPTIONS=(-o wide)
@@ -42,17 +42,19 @@ KUBECTL_CMD=(kubectl --kubeconfig "${K3S_CFG}")
 STERN_CMD=(stern --kubeconfig "${K3S_CFG}")
 NOT_FOUND_REGEX="(No resources|not) found"
 
-if [[ ! -f "${K3S_CFG}" ]]; then
-  echo "\"${K3S_CFG}\" does not exist" >&2
+if [[ ! -d "${MALCOLM_PATH}"/kubernetes ]]; then
+  echo "\"${MALCOLM_PATH}/kubernetes\" does not exist" >&2
   exit 1
 fi
 
 # destroy previous run
-"${KUBECTL_CMD[@]}" delete -f "${K3S_CFG}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+set +e
+"${KUBECTL_CMD[@]}" delete -f "${MALCOLM_PATH}"/kubernetes/* 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
 "${KUBECTL_CMD[@]}" get configmap --namespace "${K8S_NAMESPACE}" 2>/dev/null \
     | awk '{print $1}' | tail -n +2 | grep -v "kube-root-ca\.crt" \
     | xargs -r -l "${KUBECTL_CMD[@]}" delete configmap 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
 "${KUBECTL_CMD[@]}" delete namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+set -e
 
 "${KUBECTL_CMD[@]}" create namespace "${K8S_NAMESPACE}"
 
@@ -71,7 +73,8 @@ fi
     --from-file nginx-ldap/nginx/certs/dhparam.pem \
     --namespace "${K8S_NAMESPACE}"
 
-"${KUBECTL_CMD[@]}" apply -f "${K3S_CFG}"
+set +e
+"${KUBECTL_CMD[@]}" apply -f "${MALCOLM_PATH}"/kubernetes/*
 sleep 5
 for ITEM in \
     nodes \
