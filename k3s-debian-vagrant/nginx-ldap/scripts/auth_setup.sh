@@ -85,9 +85,12 @@ echo ""
 read -p "(Re)generate self-signed certificates for HTTPS access [Y/n]? " CONFIRMATION
 CONFIRMATION=${CONFIRMATION:-Y}
 if [[ $CONFIRMATION =~ ^[Yy]$ ]]; then
+
+  read -p "certificate subject: " SUBJECT
+
   pushd ./nginx/certs >/dev/null 2>&1
   rm -f *.pem
-  /bin/bash ./gen_self_signed_certs.sh >/dev/null 2>&1
+  /bin/bash ./gen_self_signed_certs.sh "${SUBJECT}" >/dev/null 2>&1
   popd >/dev/null 2>&1
 fi
 

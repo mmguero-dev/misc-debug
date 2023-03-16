@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 server_ip = "192.168.56.10"
+server_hostname = "server.k3s.internal"
 
 agents = { "agent1" => "192.168.56.11",
            "agent2" => "192.168.56.12" }
@@ -31,6 +32,7 @@ server_script = <<-SHELL
       moreutils \
       ripgrep \
       software-properties-common
+    echo "#{server_ip} #{server_hostname}" >> /etc/hosts
     export INSTALL_K3S_EXEC="server --disable traefik --bind-address=#{server_ip} --node-external-ip=#{server_ip} --flannel-iface=eth1"
     curl -sfL https://get.k3s.io | sh -
     echo "Waiting for k3s to start..."
@@ -58,6 +60,7 @@ agent_script = <<-SHELL
       moreutils \
       ripgrep \
       software-properties-common
+    echo "#{server_ip} #{server_hostname}" >> /etc/hosts
     export K3S_TOKEN_FILE=/vagrant_shared/token
     export K3S_URL=https://#{server_ip}:6443
     export INSTALL_K3S_EXEC="--flannel-iface=eth1"
