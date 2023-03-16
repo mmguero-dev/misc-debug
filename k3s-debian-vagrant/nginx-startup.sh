@@ -2,8 +2,10 @@
 
 K3S_CFG=shared/k3s.yaml
 K8S_NAMESPACE=nginx-ldap
+K8S_APP=nginx-ldap-app
 GET_OPTIONS=(-o wide)
 KUBECTL_CMD=(kubectl --kubeconfig "${K3S_CFG}")
+STERN_CMD=(stern --kubeconfig "${K3S_CFG}")
 NOT_FOUND_REGEX="(No resources|not) found"
 
 "${KUBECTL_CMD[@]}" delete -f nginx-ldap/nginx-k3s.yml 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
@@ -32,3 +34,7 @@ do
     "${KUBECTL_CMD[@]}" "${GET_OPTIONS[@]}" get "${ITEM}" --namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
 done
 echo
+
+if command -v stern >/dev/null 2>&1; then
+    "${STERN_CMD[@]}" --namespace "${K8S_NAMESPACE}" "${K8S_APP}"
+fi
