@@ -89,11 +89,6 @@ Vagrant.configure("2") do |config|
     end
 
     server.vm.provision "shell", inline: server_script
-    # server.vm.provision "file", source: "./ingress-nginx.yaml", destination: "/tmp/ingress-nginx.yaml"
-    # server.vm.provision "shell" do |s|
-    #   s.inline = "mkdir -p /var/lib/rancher/k3s/server/manifests/ && cp -v /tmp/ingress-nginx.yaml /var/lib/rancher/k3s/server/manifests/ingress-nginx.yaml"
-    #   s.privileged = true
-    # end
   end
 
   agents.each do |agent_name, agent_ip|
