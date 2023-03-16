@@ -15,11 +15,16 @@ fi
 export SCRIPT_PATH="$($DIRNAME $($REALPATH -e "${BASH_SOURCE[0]}"))"
 
 MALCOLM_PATH=
-while getopts 'vm:' OPTION; do
+SHUTDOWN_ONLY=
+while getopts 'vkm:' OPTION; do
   case "$OPTION" in
     v)
       VERBOSE_FLAG="-v"
       set -x
+      ;;
+
+    k)
+      SHUTDOWN_ONLY=yes
       ;;
 
     m)
@@ -56,43 +61,46 @@ set +e
 "${KUBECTL_CMD[@]}" delete namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
 set -e
 
-"${KUBECTL_CMD[@]}" create namespace "${K8S_NAMESPACE}"
+if [[ -z "${SHUTDOWN_ONLY}" ]]; then
+  "${KUBECTL_CMD[@]}" create namespace "${K8S_NAMESPACE}"
 
-"${KUBECTL_CMD[@]}" create configmap etc-nginx \
-    --from-file "${MALCOLM_PATH}"/nginx/nginx_ldap.conf \
-    --from-file "${MALCOLM_PATH}"/nginx/nginx.conf \
-    --from-file "${MALCOLM_PATH}"/nginx/htpasswd \
-    --namespace "${K8S_NAMESPACE}"
-"${KUBECTL_CMD[@]}" create configmap var-local-catrust-volume \
-    --from-file "${MALCOLM_PATH}"/nginx/ca-trust \
-    --namespace "${K8S_NAMESPACE}"
-"${KUBECTL_CMD[@]}" create configmap etc-nginx-certs \
-    --from-file "${MALCOLM_PATH}"/nginx/certs \
-    --namespace "${K8S_NAMESPACE}"
-"${KUBECTL_CMD[@]}" create configmap etc-nginx-certs-pem \
-    --from-file "${MALCOLM_PATH}"/nginx/certs/dhparam.pem \
-    --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap etc-nginx \
+      --from-file "${MALCOLM_PATH}"/nginx/nginx_ldap.conf \
+      --from-file "${MALCOLM_PATH}"/nginx/nginx.conf \
+      --from-file "${MALCOLM_PATH}"/nginx/htpasswd \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap var-local-catrust-volume \
+      --from-file "${MALCOLM_PATH}"/nginx/ca-trust \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap etc-nginx-certs \
+      --from-file "${MALCOLM_PATH}"/nginx/certs \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap etc-nginx-certs-pem \
+      --from-file "${MALCOLM_PATH}"/nginx/certs/dhparam.pem \
+      --namespace "${K8S_NAMESPACE}"
 
-set +e
-"${KUBECTL_CMD[@]}" apply -f "${MALCOLM_PATH}"/kubernetes/*
-sleep 5
-for ITEM in \
-    nodes \
-    ingresses \
-    services \
-    deployments \
-    replicasets \
-    pods \
-    configmaps \
-    persistentvolumes \
-    persistentvolumeclaims \
-    volumeattachments;
-do
-    echo "------ ${ITEM}"
-    "${KUBECTL_CMD[@]}" "${GET_OPTIONS[@]}" get "${ITEM}" --namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
-done
-echo
+  set +e
+  "${KUBECTL_CMD[@]}" apply -f "${MALCOLM_PATH}"/kubernetes/*
+  sleep 5
+  for ITEM in \
+      nodes \
+      ingresses \
+      services \
+      deployments \
+      replicasets \
+      pods \
+      configmaps \
+      persistentvolumes \
+      persistentvolumeclaims \
+      volumeattachments;
+  do
+      echo "------ ${ITEM}"
+      "${KUBECTL_CMD[@]}" "${GET_OPTIONS[@]}" get "${ITEM}" --namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+  done
+  echo
 
-if command -v stern >/dev/null 2>&1; then
-    "${STERN_CMD[@]}" --namespace "${K8S_NAMESPACE}" "${K8S_APP}"
+  if command -v stern >/dev/null 2>&1; then
+      "${STERN_CMD[@]}" --namespace "${K8S_NAMESPACE}" "${K8S_APP}"
+  fi
+
 fi
