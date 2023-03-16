@@ -70,7 +70,7 @@ set -e
     --from-file "${MALCOLM_PATH}"/nginx/certs \
     --namespace "${K8S_NAMESPACE}"
 "${KUBECTL_CMD[@]}" create configmap etc-nginx-certs-pem \
-    --from-file "${MALCOLM_PATH}"/nginx-ldap/nginx/certs/dhparam.pem \
+    --from-file "${MALCOLM_PATH}"/nginx/certs/dhparam.pem \
     --namespace "${K8S_NAMESPACE}"
 
 set +e
