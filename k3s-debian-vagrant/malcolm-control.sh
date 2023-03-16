@@ -69,7 +69,7 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/nginx/nginx.conf \
       --from-file "${MALCOLM_PATH}"/nginx/htpasswd \
       --namespace "${K8S_NAMESPACE}"
-  "${KUBECTL_CMD[@]}" create configmap var-local-catrust-volume \
+  "${KUBECTL_CMD[@]}" create configmap var-local-catrust \
       --from-file "${MALCOLM_PATH}"/nginx/ca-trust \
       --namespace "${K8S_NAMESPACE}"
   "${KUBECTL_CMD[@]}" create configmap etc-nginx-certs \
