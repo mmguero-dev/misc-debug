@@ -81,6 +81,19 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/nginx/certs/dhparam.pem \
       --namespace "${K8S_NAMESPACE}"
 
+  for ENVFILE in "${MALCOLM_PATH}"/kubernetes/*.env; do
+    CONFIGNAME="$(basename "${ENVFILE%.*}")-env"
+    "${KUBECTL_CMD[@]}" create configmap "${CONFIGNAME}" \
+      --from-env-file "${ENVFILE}" \
+      --namespace "${K8S_NAMESPACE}"
+  done
+  for ENVFILE in "${MALCOLM_PATH}"/netbox/env/*.env; do
+    CONFIGNAME="netbox-$(basename "${ENVFILE%.*}")-env"
+    "${KUBECTL_CMD[@]}" create configmap "${CONFIGNAME}" \
+      --from-env-file "${ENVFILE}" \
+      --namespace "${K8S_NAMESPACE}"
+  done
+
   set +e
   for MANIFEST in "${MALCOLM_PATH}"/kubernetes/*.yml; do
     "${KUBECTL_CMD[@]}" apply -f "${MANIFEST}" 2>&1
