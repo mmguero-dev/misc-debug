@@ -41,7 +41,6 @@ shift "$(($OPTIND -1))"
 
 K3S_CFG="${SCRIPT_PATH}"/shared/k3s.yaml
 K8S_NAMESPACE=malcolm
-K8S_APP=malcolm-app
 GET_OPTIONS=(-o wide)
 KUBECTL_CMD=(kubectl --kubeconfig "${K3S_CFG}")
 STERN_CMD=(stern --kubeconfig "${K3S_CFG}")
@@ -117,7 +116,7 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
   echo
 
   if command -v stern >/dev/null 2>&1; then
-      "${STERN_CMD[@]}" --namespace "${K8S_NAMESPACE}" "${K8S_APP}"
+      "${STERN_CMD[@]}" --namespace "${K8S_NAMESPACE}" '.*'
   fi
 
 fi
