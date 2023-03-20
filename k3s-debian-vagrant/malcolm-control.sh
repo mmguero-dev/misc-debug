@@ -54,7 +54,9 @@ fi
 
 # destroy previous run
 set +e
-"${KUBECTL_CMD[@]}" delete -f "${MALCOLM_PATH}"/kubernetes/*.yml 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+for MANIFEST in "${MALCOLM_PATH}"/kubernetes/*.yml; do
+  "${KUBECTL_CMD[@]}" delete -f "${MANIFEST}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+done
 "${KUBECTL_CMD[@]}" get configmap --namespace "${K8S_NAMESPACE}" 2>/dev/null \
     | awk '{print $1}' | tail -n +2 | grep -v "kube-root-ca\.crt" \
     | xargs -r -l "${KUBECTL_CMD[@]}" delete configmap 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
@@ -80,7 +82,9 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --namespace "${K8S_NAMESPACE}"
 
   set +e
-  "${KUBECTL_CMD[@]}" apply -f "${MALCOLM_PATH}"/kubernetes/*.yml
+  for MANIFEST in "${MALCOLM_PATH}"/kubernetes/*.yml; do
+    "${KUBECTL_CMD[@]}" apply -f "${MANIFEST}" 2>&1
+  done
   sleep 5
   for ITEM in \
       nodes \
