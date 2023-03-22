@@ -92,6 +92,9 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-env-file "${ENVFILE}" \
       --namespace "${K8S_NAMESPACE}"
   done
+  "${KUBECTL_CMD[@]}" create configmap "main-auth-env" \
+    --from-env-file "${MALCOLM_PATH}"/auth.env \
+    --namespace "${K8S_NAMESPACE}"
 
   set +e
   for MANIFEST in "${MALCOLM_PATH}"/kubernetes/*.yml; do
