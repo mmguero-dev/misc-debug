@@ -65,6 +65,7 @@ set -e
 if [[ -z "${SHUTDOWN_ONLY}" ]]; then
   "${KUBECTL_CMD[@]}" create namespace "${K8S_NAMESPACE}"
 
+  # nginx configmap files (some shared with other containers)
   "${KUBECTL_CMD[@]}" create configmap etc-nginx \
       --from-file "${MALCOLM_PATH}"/nginx/nginx_ldap.conf \
       --from-file "${MALCOLM_PATH}"/nginx/nginx.conf \
@@ -80,12 +81,43 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/nginx/certs/dhparam.pem \
       --namespace "${K8S_NAMESPACE}"
 
+  # opensearch configmap files (some shared with other containers)
+  "${KUBECTL_CMD[@]}" create configmap opensearch-curlrc \
+      --from-file "${MALCOLM_PATH}"/.opensearch.primary.curlrc \
+      --from-file "${MALCOLM_PATH}"/.opensearch.secondary.curlrc \
+      --namespace "${K8S_NAMESPACE}"
+  # todo: this still has to be generated locally (during auth_setup?)
+  "${KUBECTL_CMD[@]}" create configmap opensearch-keystore \
+      --from-file "${MALCOLM_PATH}"/opensearch/opensearch.keystore \
+      --namespace "${K8S_NAMESPACE}"
+
+  # logstash configmap files
+  "${KUBECTL_CMD[@]}" create configmap logstash-certs \
+      --from-file "${MALCOLM_PATH}"/logstash/certs \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap logstash-maps \
+      --from-file "${MALCOLM_PATH}"/logstash/maps \
+      --namespace "${K8S_NAMESPACE}"
+
+  # filebeat configmap files
+  "${KUBECTL_CMD[@]}" create configmap filebeat-certs \
+      --from-file "${MALCOLM_PATH}"/filebeat/certs \
+      --namespace "${K8S_NAMESPACE}"
+
+  # netbox configmap files
+  "${KUBECTL_CMD[@]}" create configmap netbox-netmap-json \
+      --from-file "${MALCOLM_PATH}"/net-map.json \
+      --namespace "${K8S_NAMESPACE}"
+
+  # general configmap env files
   for ENVFILE in "${MALCOLM_PATH}"/kubernetes/*.env; do
     CONFIGNAME="$(basename "${ENVFILE%.*}")-env"
     "${KUBECTL_CMD[@]}" create configmap "${CONFIGNAME}" \
       --from-env-file "${ENVFILE}" \
       --namespace "${K8S_NAMESPACE}"
   done
+
+  # netbox configmap env files
   for ENVFILE in "${MALCOLM_PATH}"/netbox/env/*.env; do
     CONFIGNAME="netbox-$(basename "${ENVFILE%.*}")-env"
     "${KUBECTL_CMD[@]}" create configmap "${CONFIGNAME}" \
