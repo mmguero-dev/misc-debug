@@ -109,11 +109,22 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/net-map.json \
       --namespace "${K8S_NAMESPACE}"
 
-  # configmap env files
-  for ENVFILE in "${MALCOLM_PATH}"/kubernetes/*.env; do
-    CONFIGNAME="$(basename "${ENVFILE%.*}")-env"
-    "${KUBECTL_CMD[@]}" create configmap "${CONFIGNAME}" \
-      --from-env-file "${ENVFILE}" \
+  # configmap env files (try .env first, then fall back to .env.example)
+  for ENV_EXAMPLE_FILE in ~/devel/github/mmguero-dev/Malcolm/config/*.env.example; do
+    # strip .example
+    ENV_FILE="${ENV_EXAMPLE_FILE%.*}"
+    # build configname (e.g., pcap-capture.env -> pcap-capture-env )
+    CONFIG_NAME="$(basename "${ENV_FILE%.*}")-env"
+    if [[ -f "${ENV_FILE}" ]]; then
+      # prefer local .env file
+      FROM_ENV_FILE="${ENV_FILE}"
+    else
+      # fall back to .env.example default
+      FROM_ENV_FILE="${ENV_EXAMPLE_FILE}"
+    fi
+    # create configmap from-env-file
+    "${KUBECTL_CMD[@]}" create configmap "${CONFIG_NAME}" \
+      --from-env-file "${FROM_ENV_FILE}" \
       --namespace "${K8S_NAMESPACE}"
   done
 
