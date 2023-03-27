@@ -104,6 +104,11 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/logstash/maps \
       --namespace "${K8S_NAMESPACE}"
 
+  # file-monitor configmap files
+  "${KUBECTL_CMD[@]}" create configmap yara-rules \
+      --from-file "${MALCOLM_PATH}"/yara/rules \
+      --namespace "${K8S_NAMESPACE}"
+
   # filebeat configmap files
   "${KUBECTL_CMD[@]}" create configmap filebeat-certs \
       --from-file "${MALCOLM_PATH}"/filebeat/certs \
