@@ -15,8 +15,9 @@ fi
 export SCRIPT_PATH="$($DIRNAME $($REALPATH -e "${BASH_SOURCE[0]}"))"
 
 MALCOLM_PATH=
+ENV_CONFIG_PATH=config
 SHUTDOWN_ONLY=
-while getopts 'vkm:' OPTION; do
+while getopts 'vkm:e:' OPTION; do
   case "$OPTION" in
     v)
       VERBOSE_FLAG="-v"
@@ -29,6 +30,10 @@ while getopts 'vkm:' OPTION; do
 
     m)
       MALCOLM_PATH="$($REALPATH -e "${OPTARG}" 2>/dev/null)"
+      ;;
+
+    e)
+      ENV_CONFIG_PATH="${OPTARG}"
       ;;
 
     ?)
@@ -110,7 +115,7 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --namespace "${K8S_NAMESPACE}"
 
   # configmap env files (try .env first, then fall back to .env.example)
-  for ENV_EXAMPLE_FILE in ~/devel/github/mmguero-dev/Malcolm/config/*.env.example; do
+  for ENV_EXAMPLE_FILE in ~/devel/github/mmguero-dev/Malcolm/"${ENV_CONFIG_PATH}"/*.env.example; do
     # strip .example
     ENV_FILE="${ENV_EXAMPLE_FILE%.*}"
     # build configname (e.g., pcap-capture.env -> pcap-capture-env )
