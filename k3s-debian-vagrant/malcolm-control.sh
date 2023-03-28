@@ -109,6 +109,11 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/yara/rules \
       --namespace "${K8S_NAMESPACE}"
 
+  # suricata configmap files
+  "${KUBECTL_CMD[@]}" create configmap suricata-rules \
+      --from-file "${MALCOLM_PATH}"/suricata/rules \
+      --namespace "${K8S_NAMESPACE}"
+
   # filebeat configmap files
   "${KUBECTL_CMD[@]}" create configmap filebeat-certs \
       --from-file "${MALCOLM_PATH}"/filebeat/certs \
