@@ -123,6 +123,15 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
   "${KUBECTL_CMD[@]}" create configmap netbox-netmap-json \
       --from-file "${MALCOLM_PATH}"/net-map.json \
       --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap netbox-config \
+      --from-file "${MALCOLM_PATH}"/netbox/config/configuration \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap netbox-reports \
+      --from-file "${MALCOLM_PATH}"/netbox/config/reports \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap netbox-scripts \
+      --from-file "${MALCOLM_PATH}"/netbox/config/scripts \
+      --namespace "${K8S_NAMESPACE}"
 
   # configmap env files (try .env first, then fall back to .env.example)
   for ENV_EXAMPLE_FILE in ~/devel/github/mmguero-dev/Malcolm/"${ENV_CONFIG_PATH}"/*.env.example; do
