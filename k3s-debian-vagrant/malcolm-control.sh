@@ -74,7 +74,6 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
   "${KUBECTL_CMD[@]}" create configmap etc-nginx \
       --from-file "${MALCOLM_PATH}"/nginx/nginx_ldap.conf \
       --from-file "${MALCOLM_PATH}"/nginx/nginx.conf \
-      --from-file "${MALCOLM_PATH}"/nginx/htpasswd \
       --namespace "${K8S_NAMESPACE}"
   "${KUBECTL_CMD[@]}" create configmap var-local-catrust \
       --from-file "${MALCOLM_PATH}"/nginx/ca-trust \
@@ -84,6 +83,9 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --namespace "${K8S_NAMESPACE}"
   "${KUBECTL_CMD[@]}" create configmap etc-nginx-certs-pem \
       --from-file "${MALCOLM_PATH}"/nginx/certs/dhparam.pem \
+      --namespace "${K8S_NAMESPACE}"
+  "${KUBECTL_CMD[@]}" create configmap etc-nginx-auth \
+      --from-file "${MALCOLM_PATH}"/nginx/htpasswd \
       --namespace "${K8S_NAMESPACE}"
 
   # opensearch configmap files (some shared with other containers)
@@ -133,8 +135,14 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/netbox/config/scripts \
       --namespace "${K8S_NAMESPACE}"
 
+  # htadmin configmap file
+    "${KUBECTL_CMD[@]}" create configmap htadmin-config \
+      --from-file "${MALCOLM_PATH}"/htadmin/config.ini \
+      --from-file "${MALCOLM_PATH}"/htadmin/metadata \
+      --namespace "${K8S_NAMESPACE}"
+
   # configmap env files (try .env first, then fall back to .env.example)
-  for ENV_EXAMPLE_FILE in ~/devel/github/mmguero-dev/Malcolm/"${ENV_CONFIG_PATH}"/*.env.example; do
+  for ENV_EXAMPLE_FILE in ~/malcolm-dev/Malcolm/"${ENV_CONFIG_PATH}"/*.env.example; do
     # strip .example
     ENV_FILE="${ENV_EXAMPLE_FILE%.*}"
     # build configname (e.g., pcap-capture.env -> pcap-capture-env )
