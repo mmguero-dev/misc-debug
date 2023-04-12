@@ -142,7 +142,7 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --namespace "${K8S_NAMESPACE}"
 
   # configmap env files (try .env first, then fall back to .env.example)
-  for ENV_EXAMPLE_FILE in ~/malcolm-dev/Malcolm/"${ENV_CONFIG_PATH}"/*.env.example; do
+  for ENV_EXAMPLE_FILE in "${MALCOLM_PATH}"/"${ENV_CONFIG_PATH}"/*.env.example; do
     # strip .example
     ENV_FILE="${ENV_EXAMPLE_FILE%.*}"
     # build configname (e.g., pcap-capture.env -> pcap-capture-env )
