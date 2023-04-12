@@ -23,6 +23,7 @@ server_script = <<-SHELL
       fd-find \
       git \
       gnupg2 \
+      iptables \
       jq \
       moreutils \
       ripgrep \
@@ -51,6 +52,7 @@ agent_script = <<-SHELL
       fd-find \
       git \
       gnupg2 \
+      iptables \
       jq \
       moreutils \
       ripgrep \
