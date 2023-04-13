@@ -1,6 +1,10 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+unless Vagrant.has_plugin?("vagrant-reload")
+  raise 'vagrant-reload plugin is not installed!'
+end
+
 server_ip = "192.168.56.10"
 server_hostname = "server.k3s.internal"
 
@@ -11,9 +15,8 @@ agents = { "agent1" => "192.168.56.11",
 # K3s picking up the wrong interface when starting server and agent
 # https://github.com/alexellis/k3sup/issues/306
 
-server_script = <<-SHELL
+common_script_0 = <<-SHELL
     sudo -i
-    rm -f /vagrant_shared/token /vagrant_shared/k3s.yaml
     apt-get -qqy update
     apt-get -y install --no-install-recommends \
       apt-transport-https \
@@ -28,6 +31,73 @@ server_script = <<-SHELL
       moreutils \
       ripgrep \
       software-properties-common
+      cat >> /etc/security/limits.d/limits.conf <<EOF
+* soft nofile 65535
+* hard nofile 65535
+* soft memlock unlimited
+* hard memlock unlimited
+* soft nproc 262144
+* hard nproc 524288
+* soft core 0
+* hard core 0
+EOF
+      cat >> /etc/sysctl.conf <<EOF
+# don't restrict dmesg to root
+kernel.dmesg_restrict=0
+
+# the maximum number of open file handles
+fs.file-max=2097152
+
+# increase maximums for inotify watches
+fs.inotify.max_user_watches=131072
+fs.inotify.max_queued_events=131072
+fs.inotify.max_user_instances=512
+
+# the maximum number of memory map areas a process may have
+vm.max_map_count=262144
+
+# decrease "swappiness" (swapping out runtime memory vs. dropping pages)
+vm.swappiness=1
+
+# the % of system memory fillable with "dirty" pages before flushing
+vm.dirty_background_ratio=40
+
+# maximum % of dirty system memory before committing everything
+vm.dirty_ratio=80
+
+net.core.netdev_max_backlog=250000
+net.core.optmem_max=33554432
+net.core.rmem_default=425984
+net.core.rmem_max=33554432
+net.core.somaxconn=65535
+net.core.wmem_default=425984
+net.core.wmem_max=33554432
+net.ipv4.tcp_rmem=10240 425984 33554432
+net.ipv4.tcp_wmem=10240 425984 33554432
+net.ipv4.udp_mem=10240 425984 33554432
+
+net.ipv4.conf.all.accept_redirects=0
+net.ipv4.conf.all.accept_source_route=0
+net.ipv4.conf.all.send_redirects=0
+net.ipv4.conf.default.accept_redirects=0
+net.ipv4.conf.default.accept_source_route=0
+net.ipv4.conf.default.send_redirects=0
+net.ipv4.icmp_echo_ignore_broadcasts=1
+net.ipv4.ip_forward=1
+net.ipv6.conf.all.accept_source_route=0
+net.ipv6.conf.all.accept_ra=0
+net.ipv6.conf.default.accept_ra=0
+net.ipv6.conf.all.disable_ipv6=1
+net.ipv6.conf.default.disable_ipv6=1
+net.ipv6.conf.lo.disable_ipv6=1
+EOF
+      sed -i 's/^\\(GRUB_CMDLINE_LINUX_DEFAULT=\\).*/\\1"elevator=deadline systemd.unified_cgroup_hierarchy=1 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem random.trust_cpu=on"/' /etc/default/grub
+      update-grub
+  SHELL
+
+server_script_1 = <<-SHELL
+    sudo -i
+    rm -f /vagrant_shared/token /vagrant_shared/k3s.yaml
     echo "#{server_ip} #{server_hostname}" >> /etc/hosts
     export INSTALL_K3S_EXEC="server --disable traefik --bind-address=#{server_ip} --node-external-ip=#{server_ip} --flannel-iface=eth1"
     curl -sfL https://get.k3s.io | sh -
@@ -41,22 +111,8 @@ server_script = <<-SHELL
     cp -v /etc/rancher/k3s/k3s.yaml /vagrant_shared
   SHELL
 
-agent_script = <<-SHELL
+agent_script_1 = <<-SHELL
     sudo -i
-    apt-get -qqy update
-    apt-get -y install --no-install-recommends \
-      apt-transport-https \
-      bat \
-      ca-certificates \
-      curl \
-      fd-find \
-      git \
-      gnupg2 \
-      iptables \
-      jq \
-      moreutils \
-      ripgrep \
-      software-properties-common
     echo "#{server_ip} #{server_hostname}" >> /etc/hosts
     export K3S_TOKEN_FILE=/vagrant_shared/token
     export K3S_URL=https://#{server_ip}:6443
@@ -88,7 +144,9 @@ Vagrant.configure("2") do |config|
       lv.memory = 8192
     end
 
-    server.vm.provision "shell", inline: server_script
+    server.vm.provision "shell", inline: common_script_0
+    server.vm.provision :reload
+    server.vm.provision "shell", inline: server_script_1
   end
 
   agents.each do |agent_name, agent_ip|
@@ -105,7 +163,9 @@ Vagrant.configure("2") do |config|
         lv.cpus   = 2
         lv.memory = 8192
       end
-      agent.vm.provision "shell", inline: agent_script
+      agent.vm.provision "shell", inline: common_script_0
+      agent.vm.provision :reload
+      agent.vm.provision "shell", inline: agent_script_1
     end
   end
 end
