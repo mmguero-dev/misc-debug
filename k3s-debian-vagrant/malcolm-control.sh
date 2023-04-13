@@ -101,7 +101,8 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
       --from-file "${MALCOLM_PATH}"/.opensearch.primary.curlrc \
       --from-file "${MALCOLM_PATH}"/.opensearch.secondary.curlrc \
       --namespace "${K8S_NAMESPACE}"
-  # todo: this still has to be generated locally (during auth_setup?)
+  # opensearch.keystore handled similarly to nginx/htpasswd
+  touch "${MALCOLM_PATH}"/opensearch/opensearch.keystore
   "${KUBECTL_CMD[@]}" create configmap opensearch-keystore \
       --from-file "${MALCOLM_PATH}"/opensearch/opensearch.keystore \
       --namespace "${K8S_NAMESPACE}"
