@@ -17,7 +17,8 @@ export SCRIPT_PATH="$($DIRNAME $($REALPATH -e "${BASH_SOURCE[0]}"))"
 MALCOLM_PATH=
 ENV_CONFIG_PATH=config
 SHUTDOWN_ONLY=
-while getopts 'vkm:e:' OPTION; do
+SHUTDOWN_TIMEOUT_SEC=30
+while getopts 'vkm:e:t:' OPTION; do
   case "$OPTION" in
     v)
       VERBOSE_FLAG="-v"
@@ -36,8 +37,12 @@ while getopts 'vkm:e:' OPTION; do
       ENV_CONFIG_PATH="${OPTARG}"
       ;;
 
+    t)
+      SHUTDOWN_TIMEOUT_SEC="${OPTARG}"
+      ;;
+
     ?)
-      echo "script usage: $(basename $0) [-v (verbose)] -m <Malcolm path>" >&2
+      echo "script usage: $(basename $0) [-v (verbose)] [-k (shutdown only)] -m <Malcolm path> -e <config dirname> -k <shutdown timeout sec>" >&2
       exit 1
       ;;
   esac
@@ -58,13 +63,8 @@ fi
 
 # destroy previous run
 set +e
-for MANIFEST in "${MALCOLM_PATH}"/kubernetes/*.yml; do
-  "${KUBECTL_CMD[@]}" delete -f "${MANIFEST}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
-done
-"${KUBECTL_CMD[@]}" get configmap --namespace "${K8S_NAMESPACE}" 2>/dev/null \
-    | awk '{print $1}' | tail -n +2 | grep -v "kube-root-ca\.crt" \
-    | xargs -r -l "${KUBECTL_CMD[@]}" delete configmap 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
-"${KUBECTL_CMD[@]}" delete namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+timeout "${SHUTDOWN_TIMEOUT_SEC}" "${KUBECTL_CMD[@]}" delete all --all --namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
+timeout "${SHUTDOWN_TIMEOUT_SEC}" "${KUBECTL_CMD[@]}" delete namespace "${K8S_NAMESPACE}" 2>&1 | grep -Piv "${NOT_FOUND_REGEX}"
 set -e
 
 if [[ -z "${SHUTDOWN_ONLY}" ]]; then
