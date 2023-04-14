@@ -114,6 +114,11 @@ if [[ -z "${SHUTDOWN_ONLY}" ]]; then
   "${KUBECTL_CMD[@]}" create configmap logstash-maps \
       --from-file "${MALCOLM_PATH}"/logstash/maps \
       --namespace "${K8S_NAMESPACE}"
+  # logstash.keystore handled similarly to nginx/htpasswd
+  touch "${MALCOLM_PATH}"/logstash/logstash.keystore
+  "${KUBECTL_CMD[@]}" create configmap logstash-keystore \
+      --from-file "${MALCOLM_PATH}"/logstash/logstash.keystore \
+      --namespace "${K8S_NAMESPACE}"
 
   # file-monitor configmap files
   "${KUBECTL_CMD[@]}" create configmap yara-rules \
