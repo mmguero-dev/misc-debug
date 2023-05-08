@@ -39,6 +39,11 @@ tokenHeader = { "Authorization" => "Token " + opts[:token],
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json' }
 
+
+opts[:url] = opts[:url].delete_suffix("/")
+netbox_url_suffix = "/netbox/api"
+netbox_url_base = opts[:url].delete_suffix(netbox_url_suffix)
+
 nb = Faraday.new(opts[:url]) do |conn|
   conn.request :authorization, 'Token', opts[:token]
   conn.request :json
@@ -52,7 +57,7 @@ devices = Array.new
 query = {:contains => opts[:ip], :offset => 0, :limit => NETBOX_PAGE_SIZE}
 begin
   while true do
-    if (prefixes_response = nb.get('/api/ipam/prefixes/', query).body) and prefixes_response.is_a?(Hash) then
+    if (prefixes_response = nb.get('api/ipam/prefixes/', query).body) and prefixes_response.is_a?(Hash) then
       tmp_prefixes = prefixes_response.fetch(:results, [])
       tmp_prefixes.each do |p|
         if (vrf = p.fetch(:vrf, nil))
@@ -80,7 +85,7 @@ vrfs = collect_values(crush(vrfs))
 query = {:address => opts[:ip], :offset => 0, :limit => NETBOX_PAGE_SIZE}
 begin
   while true do
-    if (ip_addresses_response = nb.get('/api/ipam/ip-addresses/', query).body) and ip_addresses_response.is_a?(Hash) then
+    if (ip_addresses_response = nb.get('api/ipam/ip-addresses/', query).body) and ip_addresses_response.is_a?(Hash) then
       tmp_ip_addresses = ip_addresses_response.fetch(:results, [])
       tmp_ip_addresses.each do |i|
         is_device = nil
@@ -88,7 +93,7 @@ begin
           is_device = !device_obj.nil?
           device = is_device ? device_obj : virtualized_obj
           # if we can, follow the :assigned_object's "full" device URL to get more information
-          device = (device.key?(:url) and (full_device = nb.get(device[:url]).body)) ? full_device : device
+          device = (device.key?(:url) and (full_device = nb.get(device[:url].delete_prefix(netbox_url_base).delete_prefix(netbox_url_suffix).delete_prefix("/")).body)) ? full_device : device
           device_id = device.fetch(:id, nil)
           device_site = ((site = device.fetch(:site, nil)) && site&.key?(:name)) ? site[:name] : site&.fetch(:display, nil)
 
@@ -96,7 +101,7 @@ begin
           services = Array.new
           service_query = { (is_device ? :device_id : :virtual_machine_id) => device_id, :offset => 0, :limit => NETBOX_PAGE_SIZE }
           while true do
-            if (services_response = nb.get('/api/ipam/services/', service_query).body) and services_response.is_a?(Hash) then
+            if (services_response = nb.get('api/ipam/services/', service_query).body) and services_response.is_a?(Hash) then
               tmp_services = services_response.fetch(:results, [])
               services.unshift(*tmp_services) unless tmp_services.nil? || tmp_services&.empty?
               service_query[:offset] += tmp_services.length()
