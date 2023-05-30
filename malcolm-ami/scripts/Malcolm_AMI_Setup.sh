@@ -83,8 +83,7 @@ function InstallEssentialPackages {
         dialog \
         httpd-tools \
         make \
-        openssl \
-        python3-requests
+        openssl
 
     $SUDO_CMD ln -s -r -f /usr/bin/python3.8 /usr/bin/python3
     $SUDO_CMD ln -s -r -f /usr/bin/pip3.8 /usr/bin/pip3
@@ -97,7 +96,9 @@ function InstallPipPackages {
     $SUDO_CMD /usr/bin/python3.8 -m pip install $USERFLAG -U \
         python-dotenv \
         pythondialog \
-        pyyaml
+        pyyaml \
+        requests \
+        urllib3==1.26.16
 }
 
 ################################################################################
