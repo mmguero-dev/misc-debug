@@ -76,8 +76,6 @@ function InstallEssentialPackages {
     # install the package(s) from amazon-linux-extras
     $SUDO_CMD amazon-linux-extras install -y \
         python3.8
-    $SUDO_CMD ln -s -r -f /usr/bin/python3.8 /usr/bin/python3
-    $SUDO_CMD ln -s -r -f /usr/bin/pip3.8 /usr/bin/pip3
 
     # install the package(s) from yum
     $SUDO_CMD yum install -y \
@@ -85,18 +83,21 @@ function InstallEssentialPackages {
         dialog \
         httpd-tools \
         make \
-        openssl
+        openssl \
+        python3-requests
+
+    $SUDO_CMD ln -s -r -f /usr/bin/python3.8 /usr/bin/python3
+    $SUDO_CMD ln -s -r -f /usr/bin/pip3.8 /usr/bin/pip3
 }
 
 ################################################################################
 # InstallPipPackages - install specific python packages
 function InstallPipPackages {
     [[ $EUID -eq 0 ]] && USERFLAG="" || USERFLAG="--user"
-    $SUDO_CMD /usr/bin/python3 -m pip install $USERFLAG -U \
+    $SUDO_CMD /usr/bin/python3.8 -m pip install $USERFLAG -U \
         python-dotenv \
         pythondialog \
-        pyyaml \
-        requests
+        pyyaml
 }
 
 ################################################################################
