@@ -1,0 +1,10 @@
+{
+  "aws_access_key": "XXXXXXXXXXXXXXXXXXXX",
+  "aws_secret_key": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "instance_type": "t3a.2xlarge",
+  "ssh_username": "ubuntu",
+  "vpc_region": "us-east-1",
+  "vpc_tag_name_filter": "",
+  "vpc_subnet_tag_name_filter": "",
+  "vpc_security_group_tag_name_filter": ""
+}
