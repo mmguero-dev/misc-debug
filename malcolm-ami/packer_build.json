@@ -37,17 +37,17 @@
         "filters": {
          "architecture": "x86_64",
          "virtualization-type": "hvm",
-         "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*",
+         "name": "amzn2-ami-kernel-5.10-hvm-*-x86_64-gp2",
          "root-device-type": "ebs"
         },
         "owners": [
-         "099720109477"
+         "137112412989"
         ],
         "most_recent": true
        },
       "instance_type": "{{user `instance_type`}}",
       "ssh_username": "{{user `ssh_username`}}",
-      "ami_name": "gold-ami-malcolm-ubuntu_22.04_v1-{{isotime | clean_resource_name}}"
+      "ami_name": "malcolm-amzn2_v1-{{isotime | clean_resource_name}}"
     }
   ],
   "provisioners": [

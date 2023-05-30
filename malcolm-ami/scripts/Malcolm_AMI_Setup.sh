@@ -2,6 +2,13 @@
 
 # Configure Amazon Linux 2 and install Malcolm
 
+###############################################################################
+# script options
+set -o pipefail
+shopt -s nocasematch
+ENCODING="utf-8"
+
+###############################################################################
 # checks and initialization
 
 if [[ -z "$BASH_VERSION" ]]; then
@@ -14,14 +21,53 @@ if ! command -v amazon-linux-extras >/dev/null 2>&1; then
     exit 1
 fi
 
+###############################################################################
+# command-line parameters
+# options
+# -v          (verbose)
+# -r repo     (Malcolm repository, e.g., cisagov/Malcolm)
+# -t tag      (Malcolm tag, e.g., v23.05.1)
+# -u UID      (user UID, e.g., 1000)
+VERBOSE_FLAG=
+MALCOLM_REPO=cisagov/Malcolm
+MALCOLM_TAG=v23.05.1
+[[ $EUID -eq 0 ]] && MALCOLM_UID=1000 || MALCOLM_UID="$(id -u)"
+while getopts 'vr:t:u:' OPTION; do
+  case "$OPTION" in
+    v)
+      VERBOSE_FLAG="-v"
+      set -x
+      ;;
+
+    r)
+      MALCOLM_REPO="$OPTARG"
+      ;;
+
+    t)
+      MALCOLM_TAG="$OPTARG"
+      ;;
+
+    u)
+      MALCOLM_UID="$OPTARG"
+      ;;
+
+    ?)
+      echo "script usage: $(basename $0) [-v (verbose)] [-r <repo>] [-t <tag>] [-u <UID>]" >&2
+      exit 1
+      ;;
+  esac
+done
+shift "$(($OPTIND -1))"
+
 if [[ $EUID -eq 0 ]]; then
-    DEFAULT_USER="$(id -nu 1000)"
     SUDO_CMD=""
 else
-    DEFAULT_USER="$SCRIPT_USER"
     SUDO_CMD="sudo"
 fi
-
+MALCOLM_USER="$(id -nu $MALCOLM_UID)"
+MALCOLM_USER_GROUP="$(id -gn $MALCOLM_UID)"
+MALCOLM_USER_HOME="$(getent passwd "$MALCOLM_USER" | cut -d: -f6)"
+MALCOLM_URL="https://codeload.github.com/$MALCOLM_REPO/tar.gz/$MALCOLM_TAG"
 
 ###################################################################################
 # InstallEssentialPackages
@@ -37,7 +83,6 @@ function InstallEssentialPackages {
     $SUDO_CMD yum install -y \
         curl \
         dialog \
-        git \
         httpd-tools \
         make \
         openssl
@@ -67,10 +112,10 @@ function InstallDocker {
         $SUDO_CMD systemctl enable docker
         $SUDO_CMD systemctl start docker
 
-        if [[ -n "$DEFAULT_USER" ]]; then
-            echo "Adding \"$DEFAULT_USER\" to group \"docker\"..." >&2
-            $SUDO_CMD usermod -a -G docker "$DEFAULT_USER"
-            echo "$DEFAULT_USER will need to log out and log back in for this to take effect" >&2
+        if [[ -n "$MALCOLM_USER" ]]; then
+            echo "Adding \"$MALCOLM_USER\" to group \"docker\"..." >&2
+            $SUDO_CMD usermod -a -G docker "$MALCOLM_USER"
+            echo "$MALCOLM_USER will need to log out and log back in for this to take effect" >&2
         fi
 
     else
@@ -149,10 +194,18 @@ EOT
 
 ################################################################################
 # InstallMalcolm - clone and configure Malcolm and grab some sample PCAP
-# function InstallMalcolm {
-#     # todo
-#     echo
-# }
+function InstallMalcolm {
+    pushd "$MALCOLM_USER_HOME" >/dev/null 2>&1
+    mkdir -p ./Malcolm
+    curl -fsSL "$MALCOLM_URL" | tar xzf - -C ./Malcolm --strip-components 1
+    if [[ -s ./Malcolm/docker-compose-standalone.yml ]]; then
+        pushd ./Malcolm >/dev/null 2>&1
+        mv docker-compose-standalone.yml docker-compose.yml
+        popd >/dev/null 2>&1
+    fi
+    chown -R $MALCOLM_USER:$MALCOLM_USER_GROUP ./Malcolm
+    popd >/dev/null 2>&1
+}
 
 ################################################################################
 # "main"
@@ -161,4 +214,4 @@ InstallEssentialPackages
 InstallPipPackages
 InstallDocker
 SystemConfig
-# InstallMalcolm
+InstallMalcolm
