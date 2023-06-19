@@ -9,27 +9,33 @@ for VOICE in $(mimic3 --voices | grep ^en | awk '{print $1}'); do
         tee "${OUTFILE}.ssml" >/dev/null <<EOF
 <speak>
 <voice name="${VOICE}#${SPEAKER}">
-<break/>
-Ozymandias, by Percy Bysshe Shelley
-<break/>
-I met a traveller from an antique land,
-Who said, "Two vast and trunkless legs of stone
-Stand in the desert  Near them, on the sand,
-Half sunk a shattered visage lies, whose frown,
+<s>Ozymandias, by Percy Bysshe Shelley</s>
+<s>
+I met a traveller from an antique land who said,
+Two vast and trunkless legs of stone Stand in the desert.
+</s>
+<s>
+Near them, on the sand, Half sunk a shattered visage lies, whose frown,
 And wrinkled lip, and sneer of cold command,
 Tell that its sculptor well those passions read
 Which yet survive, stamped on these lifeless things,
-The hand that mocked them, and the heart that fed;
-And on the pedestal, these words appear:
+The hand that mocked them, and the heart that fed
+</s>
+<s>And on the pedestal, these words appear:</s>
+<s>
 My name is Ozymandias, King of Kings;
 Look on my Works, ye Mighty, and despair!
-Nothing beside remains."
+</s>
+<s>Nothing beside remains."</s>
 <break/>
+<s>
 Round the decay of that colossal Wreck, boundless and bare
-The lone and level sands stretch far away."
+The lone and level sands stretch far away.
+</s>
 <break time="3s"/>
+<s>
 This voice was ${VOICE} with the speaker ${SPEAKER}.
-<break/>
+</s>
 </voice>
 </speak>
 EOF
