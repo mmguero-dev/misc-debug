@@ -48,4 +48,9 @@ RUN apt-get -q update && \
     zkg autoconfig --force && \
     echo "@load packages" >> "${ZEEK_DIR}"/share/zeek/site/local.zeek && \
     apt-get clean && \
-      rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/cache/*/*
+      rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/cache/*/* && \
+    echo && \
+    echo "Run the container, followed by:" && \
+    echo "    $ zkg install --skiptests --force https://github.com/cisagov/icsnpp-synchrophasor" && \
+    echo "    $ zeek -NN local" && \
+    echo
