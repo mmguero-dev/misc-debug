@@ -5,6 +5,7 @@ require 'slop'
 require 'lru_redux'
 require 'json'
 require 'faraday'
+require 'fuzzystringmatch'
 
 def collect_values(hashes)
   # https://stackoverflow.com/q/5490952
@@ -28,11 +29,13 @@ def crush(thing)
 end
 
 NETBOX_PAGE_SIZE=50
+AUTOPOPULATE_FUZZY_THRESHOLD=0.75
 
 opts = Slop.parse do |o|
   o.string '-u', '--url', 'NetBox URL'
   o.string '-t', '--token', 'NetBox token', required: true
   o.string '-i', '--ip', 'Search by this IP address'
+  o.string '-o', '--oui', 'Manuf match lookup by this OUI'
   o.bool '-v', '--verbose', 'enable verbose mode'
 end
 tokenHeader = { "Authorization" => "Token " + opts[:token],
@@ -138,5 +141,43 @@ end
 devices = collect_values(crush(devices))
 devices.fetch(:service, [])&.flatten!&.uniq!
 
-puts JSON.pretty_generate({:devices => devices})
+manuf = nil
+if !opts[:oui].nil? && !opts[:oui]&.empty? then
+  _fuzzy_matcher = FuzzyStringMatch::JaroWinkler.create( :native )
+  _manufs = Array.new
+  # fetch the manufacturers to do the comparison. this is a lot of work
+  # and not terribly fast but once the hash it populated it shouldn't happen too often
+  _query = {:offset => 0, :limit => NETBOX_PAGE_SIZE}
+  begin
+    while true do
+      if (_manufs_response = nb.get('api/dcim/manufacturers/', _query).body) and _manufs_response.is_a?(Hash) then
+        _tmp_manufs = _manufs_response.fetch(:results, [])
+        _tmp_manufs.each do |_manuf|
+          _tmp_name = _manuf.fetch(:name, _manuf.fetch(:display, nil))
+          _manufs << { :name => _tmp_name,
+                       :id => _manuf.fetch(:id, nil),
+                       :url => _manuf.fetch(:url, nil),
+                       :match => _fuzzy_matcher.getDistance(_tmp_name.to_s.downcase, opts[:oui].to_s.downcase)
+                     }
+        end
+        _query[:offset] += _tmp_manufs.length()
+        break unless (_tmp_manufs.length() >= NETBOX_PAGE_SIZE)
+      else
+        break
+      end
+    end
+  rescue Faraday::Error
+    # give up aka do nothing
+  end
+  # return the manuf with the highest match
+  manuf = _manufs.max_by{|k| k[:match] }
+  if !manuf.is_a?(Hash) || (manuf.fetch(:match, 0.0) < AUTOPOPULATE_FUZZY_THRESHOLD) then
+    # match was not close enough, set default ("unspecified") manufacturer
+    manuf = { :name => "Unidentified",
+              :match => manuf.fetch(:match, 0.0) }
+  end
+end
 
+puts JSON.pretty_generate({:vrfs => vrfs,
+                           :devices => devices,
+                           :manuf => manuf})
