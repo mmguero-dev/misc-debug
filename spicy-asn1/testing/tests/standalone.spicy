@@ -1,7 +1,0 @@
-# @TEST-DOC: Test parsing behavior of ASN.
-#
-# @TEST-EXEC: spicyc ${DIST}/analyzer/asn.spicy -j -d -o asn.hlto
-#
-# TODO: Add/adapt standalone parsing tests here.
-# @TEST-EXEC: printf "test string" | spicy-dump -p ASN::Request asn.hlto >output 2>&1
-# @TEST-EXEC: TEST_DIFF_CANONIFIER= btest-diff output
