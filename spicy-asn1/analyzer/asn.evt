@@ -1,0 +1,12 @@
+import ASN;
+import Zeek_ASN;
+
+protocol analyzer spicy::ASN1_TCP over TCP:
+    parse with ASN::Messages,
+    ports { 12345/tcp };
+
+protocol analyzer spicy::ASN1_UDP over UDP:
+    parse with ASN::Messages,
+    ports { 12345/tcp };
+
+on ASN::Message -> event ASN::message($conn, $is_orig, self.payload);

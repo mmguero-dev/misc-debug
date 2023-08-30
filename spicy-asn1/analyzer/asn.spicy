@@ -1,0 +1,19 @@
+module ASN;
+
+import ASN1;
+import spicy;
+
+#-----------------------------------------------------------------------------
+public type Messages = unit {
+    : Message[];
+};
+
+#-----------------------------------------------------------------------------
+public type Message = unit {
+    var success: bool = False;
+
+    asn : ASN1::ASN1Message(True) {
+        self.success = True;
+    }
+
+};
