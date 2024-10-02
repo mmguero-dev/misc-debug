@@ -3,7 +3,6 @@
 ##! and logs the address once per day (by default). It is modeled
 ##! pretty heavily after known-hosts.zeek
 
-@load base/protocols/conn
 @load base/utils/directions-and-hosts
 @load base/frameworks/cluster
 
