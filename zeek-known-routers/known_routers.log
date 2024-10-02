@@ -1,0 +1,15 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	known_routers
+#open	2024-10-02-16-01-34
+#fields	ts	orig_h	orig_l2_addr	ttl	hlim
+#types	time	addr	string	count	count
+1588061946.043189	fe80::21de:6a5d:c2fa:e4ac	f8:db:88:a4:34:10	0	255
+1588062604.932908	10.10.30.1	00:e0:4c:12:03:b5	255	0
+1588062743.800448	::	f8:db:88:a4:34:24	0	255
+1588062743.800448	fe80::31c6:f934:59d4:3744	f8:db:88:a4:34:24	0	255
+1588063161.602065	fe80::2cf2:f3d:b0d6:6c21	b8:ca:3a:b7:19:0a	0	255
+1588063166.349406	fe80::806b:8e56:5bb3:1ad9	5c:f9:dd:07:b6:1a	0	255
+#close	2024-10-02-16-01-36
