@@ -24,9 +24,9 @@ export {
       ## The originating MAC address of the detected packet with the 255 TTL/HLIM value.
       orig_l2_addr: string &log &optional;
       ## When IPv4, the TTL value.
-      ttl: count &log;
+      ttl: count &log &optional;
       ## When IPv6, the HLIM value.
-      hlim: count &log;
+      hlim: count &log &optional;
    };
 
    ## Toggles between different implementations of this script.
@@ -154,16 +154,18 @@ event zeek_init() &priority=5 {
 event new_packet(c: connection, p: pkt_hdr) &priority=5 {
    if ( ( ( p?$ip && ( p$ip$ttl == 255 ) ) || ( p?$ip6 && ( p$ip6$hlim == 255 ) ) ) && ( addr_matches_host(c$id$orig_h, router_tracking) ) ) {
 
-      local ttl = 0;
-      local hlim = 0;
+      local ttl : count = 0;
+      local hlim : count = 0;
+      local mac : string = "";
       if ( p?$ip ) ttl = p$ip$ttl;
          else if ( p?$ip6 ) hlim = p$ip6$hlim;
+      if ( c?$orig && c$orig?$l2_addr ) mac = c$orig$l2_addr;
 
       event Known::router_found([$ts=network_time(),
                                  $orig_h=c$id$orig_h,
                                  $ttl=ttl,
                                  $hlim=hlim,
-                                 $orig_l2_addr=c$orig$l2_addr]);
+                                 $orig_l2_addr=mac]);
 
    }
 }
