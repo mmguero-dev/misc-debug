@@ -151,7 +151,9 @@ event zeek_init() &priority=5 {
                                            $policy=log_policy_routers]);
 }
 
-event new_packet(c: connection, p: pkt_hdr) &priority=5 {
+event new_connection(c: connection) &priority=5 {
+   local p: raw_pkt_hdr = get_current_packet_header();
+
    if ( ( ( p?$ip && ( p$ip$ttl == 255 ) ) || ( p?$ip6 && ( p$ip6$hlim == 255 ) ) ) && ( addr_matches_host(c$id$orig_h, router_tracking) ) ) {
 
       local ttl : count = 0;
