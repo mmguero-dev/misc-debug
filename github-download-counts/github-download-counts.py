@@ -13,9 +13,8 @@ import sys
 
 from collections import defaultdict
 from dateparser import parse as ParseDate
-from datetime import datetime, timezone
+from datetime import datetime
 from tzlocal import get_localzone
-from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 ###################################################################################################
@@ -32,6 +31,11 @@ def main():
         description='\n'.join(
             [
                 'Display download statistics from GitHub repositories',
+                '',
+                '* Access to the GitHub API is done using your personal access token (PAT).'
+                'See https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens',
+                'for information about PATs.',
+                '',
             ]
         ),
         formatter_class=argparse.RawTextHelpFormatter,
@@ -69,7 +73,7 @@ def main():
         nargs='*',
         type=str,
         default=[],
-        help="GitHub repository/repositories (e.g., owner/repo)",
+        help="One or more GitHub repository/repositories (e.g., org/repo)",
     )
     parser.add_argument(
         '--date-from',
@@ -88,13 +92,21 @@ def main():
         help="Human readable date expression for ending of search time frame (default: now)",
     )
     parser.add_argument(
+        '--release',
+        dest='releaseRegexes',
+        nargs='*',
+        type=str,
+        default=[],
+        help="List of regular expressions against which to match releases (e.g., ^v24\\.10)",
+    )
+    parser.add_argument(
         '-a',
         '--asset',
         dest='assetRegexes',
         nargs='*',
         type=str,
         default=[],
-        help="List of regular expressions against which to match release assets",
+        help="List of regular expressions against which to match release assets (e.g., ^\\w+.+\\.iso\\.01$, ^foobar_.*\\.tar\\.gz$",
     )
     parser.add_argument(
         '-i',
@@ -103,7 +115,7 @@ def main():
         nargs='*',
         type=str,
         default=[],
-        help="List of regular expressions against which to match container images",
+        help="List of regular expressions against which to match container images (e.g., ^foobar/barbaz$)",
     )
     parser.add_argument(
         '--image-tag',
@@ -111,7 +123,7 @@ def main():
         nargs='*',
         type=str,
         default=[],
-        help="List of regular expressions against which to match container image tags",
+        help="List of regular expressions against which to match container image tags (e.g., ^24\\.10)",
     )
     try:
         parser.error = parser.exit
@@ -156,6 +168,9 @@ def main():
     assetRegexes = {}
     for reStr in args.assetRegexes:
         assetRegexes[reStr] = re.compile(reStr)
+    releaseRegexes = {}
+    for reStr in args.releaseRegexes:
+        releaseRegexes[reStr] = re.compile(reStr)
     imageRegexes = {}
     for reStr in args.imageRegexes:
         imageRegexes[reStr] = re.compile(reStr)
@@ -188,7 +203,12 @@ def main():
                 # loop over the releases for this repo, examining those in the search time frame
                 if assetRegexes:
                     for release in repo.releases():
-                        if dateFrom <= release.published_at <= dateTo:
+                        if dateFrom <= release.published_at <= dateTo and (
+                            (
+                                (not releaseRegexes)
+                                or any([v.match(release.tag_name) for k, v in releaseRegexes.items()])
+                            )
+                        ):
                             logging.debug(f'{repo.full_name} {release.tag_name} at {release.published_at}')
                             # aggregate download counts for assets matching the regular expressions provided
                             for asset in release.assets():
@@ -301,9 +321,13 @@ def main():
             except Exception as e:
                 logging.error(f"Parsing HTML page for package: {e}")
 
-    finalResults['release_assets'] = assetDownloads
-    finalResults['image_pulls'] = imagePulls
+    # put things together for the final output
+    if assetDownloads:
+        finalResults['release_assets'] = assetDownloads
+    if imagePulls:
+        finalResults['image_pulls'] = imagePulls
 
+    # add a total to each sub-dictionary
     for key, subDict in finalResults.items():
         subDict["total"] = sum(subDict.values())
 
