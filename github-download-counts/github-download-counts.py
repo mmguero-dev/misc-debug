@@ -246,13 +246,13 @@ def main():
                 )
                 versionsResponse.raise_for_status()
                 if (versionsJson := mmguero.LoadStrIfJson(versionsResponse.content)) and isinstance(versionsJson, list):
-                    # only consider versions where the updated/created date is in our search time frame, and
+                    # only consider versions where the tag creation date is in our search time frame, and
                     #   the tag name(s) match the regex filter (if specified)
                     versions.extend(
                         [
                             x
                             for x in versionsJson
-                            if (dateFrom <= ParseDate(x.get('updated_at', x.get('created_at'))) <= dateTo)
+                            if (dateFrom <= ParseDate(x.get('created_at')) <= dateTo)
                             and (
                                 (
                                     (not imageTagRegexes)
