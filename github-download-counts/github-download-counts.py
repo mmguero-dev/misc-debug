@@ -194,7 +194,9 @@ def main():
                             for asset in release.assets():
                                 for reStr, reObj in assetRegexes.items():
                                     if reObj.match(asset.name):
-                                        assetDownloads[reStr] = assetDownloads[reStr] + asset.download_count
+                                        assetDownloads[f"{repoParts[0]} + '/' {reStr}"] = (
+                                            assetDownloads[f"{repoParts[0]} + '/' {reStr}"] + asset.download_count
+                                        )
 
             if imageRegexes and (repoParts[0] not in orgsPolledForImages):
                 # make requests to list container images in the ghcr.io repository for this organization
@@ -301,6 +303,10 @@ def main():
 
     finalResults['release_assets'] = assetDownloads
     finalResults['image_pulls'] = imagePulls
+
+    for key, subDict in finalResults.items():
+        subDict["total"] = sum(subDict.values())
+
     print(json.dumps(finalResults))
 
     return 0
