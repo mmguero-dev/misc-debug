@@ -294,7 +294,7 @@ def main():
                             tagsStr = f':{"(" if len(tags) > 1 else ""}{"|".join(tags)}{")" if len(tags) > 1 else ""}'
                         else:
                             tagsStr = '@' + version['name']
-                        if pullCount := int(totalDownloadsLabel.find_next('span').text):
+                        if pullCount := int(totalDownloadsLabel.find_next('span').text.replace(",", "")):
                             imagePulls[
                                 f"{mmguero.DeepGet(packageInfo, ['owner', 'login'])}/{packageInfo['name']}{tagsStr}"
                             ] = int(pullCount)
