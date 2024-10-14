@@ -168,6 +168,8 @@ def main():
     logging.info(gh)
 
     # unfortunately not all of the APIs we need are covered by github3 ಠ_ಥ
+    #   so we have to do some manual API pulling with requests, and even (gasp)
+    #   some web scraping with bs4
     ghSession = requests.Session()
     ghSession.headers = {
         'Accept': 'application/vnd.github.v3+json',
@@ -177,6 +179,7 @@ def main():
     ghHTMLSession = requests.Session()
 
     # loop over the repos provided
+    orgsPolledForImages = set()
     for repoSpec in args.repos:
         repoParts = repoSpec.split('/')
         if len(repoParts) == 2:
@@ -193,9 +196,10 @@ def main():
                                     if reObj.match(asset.name):
                                         assetDownloads[reStr] = assetDownloads[reStr] + asset.download_count
 
-            if imageRegexes:
-                # make requests for container image pulls from ghcr.io
+            if imageRegexes and (repoParts[0] not in orgsPolledForImages):
+                # make requests to list container images in the ghcr.io repository for this organization
                 page = 0
+                orgsPolledForImages.add(repoParts[0])
                 while True:
                     try:
                         page = page + 1
@@ -224,7 +228,7 @@ def main():
                         logging.error(f"Listing packages: {e}")
                         break
 
-    # for the packages we accumulated earlier, retrieve pull counts for matching versions
+    # for the packages we accumulated earlier, put together a list of matching image tags
     for packageInfo in packages:
         versions = []
         page = 0
@@ -242,6 +246,8 @@ def main():
                 )
                 versionsResponse.raise_for_status()
                 if (versionsJson := mmguero.LoadStrIfJson(versionsResponse.content)) and isinstance(versionsJson, list):
+                    # only consider versions where the updated/created date is in our search time frame, and
+                    #   the tag name(s) match the regex filter (if specified)
                     versions.extend(
                         [
                             x
@@ -270,6 +276,7 @@ def main():
                 logging.error(f"Listing package versions: {e}")
                 break
 
+        # the GitHub packages API apparently doesn't surface pull counts, so we've got to do some scraping to get that number
         for version in versions:
             try:
                 if 'html_url' in version:
@@ -279,6 +286,7 @@ def main():
                     )
                     tmpResponse.raise_for_status()
                     soup = BeautifulSoup(tmpResponse.text, 'html.parser')
+                    # look for the "Total downloads" <span>, then get the contents of its next sibling
                     if totalDownloadsLabel := soup.find('span', string="Total downloads"):
                         if tags := mmguero.DeepGet(version, ['metadata', 'container', 'tags']):
                             tagsStr = f':{"(" if len(tags) > 1 else ""}{"|".join(tags)}{")" if len(tags) > 1 else ""}'
