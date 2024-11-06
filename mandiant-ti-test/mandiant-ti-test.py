@@ -115,5 +115,12 @@ for indicator in mati_client.Indicators.get_list(
     end_epoch=end_epoch,
 ):
     logging.info(
-        f'{type(indicator).__name__}: {json.dumps({key: getattr(indicator, key) for key in indicator.__dir__() if not key.startswith("__") and not callable(getattr(indicator, key))}, default=json_serializer)}'
+        json.dumps(
+            {
+                key: getattr(indicator, key)
+                for key in indicator.__dir__()
+                if not key.startswith("__") and not callable(getattr(indicator, key))
+            },
+            default=json_serializer,
+        )
     )
