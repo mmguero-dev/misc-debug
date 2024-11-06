@@ -116,7 +116,7 @@ parser.add_argument(
     type=mmguero.str2bool,
     nargs='?',
     const=True,
-    default=True,
+    default=False,
     help='Include campaigns',
 )
 parser.add_argument(
@@ -126,7 +126,7 @@ parser.add_argument(
     type=mmguero.str2bool,
     nargs='?',
     const=True,
-    default=True,
+    default=False,
     help='Include reports',
 )
 parser.add_argument(
@@ -136,7 +136,7 @@ parser.add_argument(
     type=mmguero.str2bool,
     nargs='?',
     const=True,
-    default=True,
+    default=False,
     help='Include threat rating',
 )
 parser.add_argument(
