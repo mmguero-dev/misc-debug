@@ -23,7 +23,19 @@ def json_serializer(obj):
         return obj.astimezone(UTCTimeZone).isoformat()
 
     elif isinstance(obj, GeneratorType):
-        return list(obj)
+        return list(map(json_serializer, obj))
+
+    elif isinstance(obj, list):
+        return [json_serializer(item) for item in obj]
+
+    elif isinstance(obj, dict):
+        return {key: json_serializer(value) for key, value in obj.items()}
+
+    elif isinstance(obj, set):
+        return {json_serializer(item) for item in obj}
+
+    elif isinstance(obj, tuple):
+        return tuple(json_serializer(item) for item in obj)
 
     elif isinstance(obj, FunctionType):
         return f"function {obj.__name__}" if obj.__name__ != "<lambda>" else "lambda"
