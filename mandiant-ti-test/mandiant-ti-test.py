@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import mmguero
 import logging
 import os
 import sys
@@ -75,6 +76,24 @@ parser.add_argument(
     help="Retrieve indicators ending at this timestamp",
 )
 parser.add_argument(
+    '-m',
+    '--mscore',
+    dest='mscore',
+    type=int,
+    default=0,
+    help="Minimum 'mscore' or 'confidence'",
+)
+parser.add_argument(
+    '-x',
+    '--exclude-osint',
+    dest='excludeOsInt',
+    type=mmguero.str2bool,
+    nargs='?',
+    const=True,
+    default=False,
+    help='Exclude Open Source Intelligence from results',
+)
+parser.add_argument(
     '--api',
     dest='apiKey',
     metavar='<string>',
@@ -113,18 +132,16 @@ ParseDateArg = lambda valStr, defaultStr: (
     ParseDate(valStr).astimezone(UTCTimeZone) if valStr else ParseDate(defaultStr).astimezone(UTCTimeZone)
 )
 
-start_epoch = ParseDateArg(args.start, "one hour ago")
-end_epoch = ParseDateArg(args.end, "now")
-logging.info(f"{start_epoch} to {end_epoch}")
-
 mati_client = mandiant_threatintel.ThreatIntelClient(
     api_key=args.apiKey,
     secret_key=args.secretKey,
 )
 
 for indicator in mati_client.Indicators.get_list(
-    start_epoch=start_epoch,
-    end_epoch=end_epoch,
+    minimum_mscore=args.mscore,
+    exclude_osint=args.excludeOsInt,
+    start_epoch=ParseDateArg(args.start, "one hour ago"),
+    end_epoch=ParseDateArg(args.end, "now"),
 ):
     logging.info(
         json.dumps(
