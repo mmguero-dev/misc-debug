@@ -18,28 +18,33 @@ script_name = os.path.basename(__file__)
 script_path = os.path.dirname(os.path.realpath(__file__))
 
 
-def json_serializer(obj):
-
+def mandiant_json_serializer(obj, seen_objs=None):
+    """
+    JSON serializer for mandiant_threatintel.APIResponse object (for debug output)
+    """
     if isinstance(obj, datetime):
         return obj.astimezone(UTCTimeZone).isoformat()
 
     elif isinstance(obj, GeneratorType):
-        return list(map(json_serializer, obj))
+        return [mandiant_json_serializer(item, seen_objs=objs) for item in obj]
 
     elif isinstance(obj, list):
-        return [json_serializer(item) for item in obj]
+        return [mandiant_json_serializer(item, seen_objs=objs) for item in obj]
 
     elif isinstance(obj, dict):
-        return {key: json_serializer(value) for key, value in obj.items()}
+        return {key: mandiant_json_serializer(value, seen_objs=objs) for key, value in obj.items()}
 
     elif isinstance(obj, set):
-        return {json_serializer(item) for item in obj}
+        return {mandiant_json_serializer(item, seen_objs=objs) for item in obj}
 
     elif isinstance(obj, tuple):
-        return tuple(json_serializer(item) for item in obj)
+        return tuple(mandiant_json_serializer(item, seen_objs=objs) for item in obj)
 
     elif isinstance(obj, FunctionType):
         return f"function {obj.__name__}" if obj.__name__ != "<lambda>" else "lambda"
+
+    elif isinstance(obj, LambdaType):
+        return "lambda"
 
     elif (not hasattr(obj, "__str__") or obj.__str__ is object.__str__) and (
         not hasattr(obj, "__repr__") or obj.__repr__ is object.__repr__
@@ -48,6 +53,19 @@ def json_serializer(obj):
 
     else:
         return str(obj)
+
+
+def mandiant_object_as_json_str(indicator):
+    return json.dumps(
+        {
+            key: getattr(indicator, key)
+            for key in indicator.__dir__()
+            if (not key.startswith("_"))
+            and (not key == 'attributed_associations')
+            and (not callable(getattr(indicator, key)))
+        },
+        default=mandiant_json_serializer,
+    )
 
 
 parser = argparse.ArgumentParser(
@@ -143,15 +161,4 @@ for indicator in mati_client.Indicators.get_list(
     start_epoch=ParseDateArg(args.start, "one hour ago"),
     end_epoch=ParseDateArg(args.end, "now"),
 ):
-    logging.info(
-        json.dumps(
-            {
-                key: getattr(indicator, key)
-                for key in indicator.__dir__()
-                if (not key.startswith("_"))
-                and (not key == 'attributed_associations')
-                and (not callable(getattr(indicator, key)))
-            },
-            default=json_serializer,
-        )
-    )
+    print(mandiant_object_as_json_str(indicator))
