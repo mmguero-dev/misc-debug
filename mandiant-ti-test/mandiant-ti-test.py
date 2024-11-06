@@ -148,7 +148,9 @@ for indicator in mati_client.Indicators.get_list(
             {
                 key: getattr(indicator, key)
                 for key in indicator.__dir__()
-                if not key.startswith("__") and not callable(getattr(indicator, key))
+                if (not key.startswith("_"))
+                and (not key == 'attributed_associations')
+                and (not callable(getattr(indicator, key)))
             },
             default=json_serializer,
         )
