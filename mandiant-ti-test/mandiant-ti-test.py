@@ -92,9 +92,9 @@ parser.add_argument(
     help="Retrieve indicators ending at this timestamp",
 )
 parser.add_argument(
-    '-m',
-    '--mscore',
-    dest='mscore',
+    '-s',
+    '--score',
+    dest='score',
     type=int,
     default=0,
     help="Minimum 'mscore' or 'confidence'",
@@ -108,6 +108,56 @@ parser.add_argument(
     const=True,
     default=False,
     help='Exclude Open Source Intelligence from results',
+)
+parser.add_argument(
+    '-c',
+    '--include-campaigns',
+    dest='includeCampaigns',
+    type=mmguero.str2bool,
+    nargs='?',
+    const=True,
+    default=True,
+    help='Include campaigns',
+)
+parser.add_argument(
+    '-r',
+    '--include-reports',
+    dest='includeReports',
+    type=mmguero.str2bool,
+    nargs='?',
+    const=True,
+    default=True,
+    help='Include reports',
+)
+parser.add_argument(
+    '-t',
+    '--include-threat-rating',
+    dest='includeThreatRating',
+    type=mmguero.str2bool,
+    nargs='?',
+    const=True,
+    default=True,
+    help='Include threat rating',
+)
+parser.add_argument(
+    '-m',
+    '--include-misp',
+    dest='includeMisp',
+    type=mmguero.str2bool,
+    nargs='?',
+    const=True,
+    default=True,
+    help='Include MISP',
+)
+parser.add_argument(
+    '-g',
+    '--include-category',
+    dest='includeCategory',
+    type=mmguero.str2bool,
+    nargs='?',
+    const=True,
+    default=True,
+    help='Include category',
 )
 parser.add_argument(
     '--api',
@@ -154,8 +204,13 @@ mati_client = mandiant_threatintel.ThreatIntelClient(
 )
 
 for indicator in mati_client.Indicators.get_list(
-    minimum_mscore=args.mscore,
+    minimum_mscore=args.score,
     exclude_osint=args.excludeOsInt,
+    include_campaigns=args.includeCampaigns,
+    include_reports=args.includeReports,
+    include_threat_rating=args.includeThreatRating,
+    include_misp=args.includeMisp,
+    include_category=args.includeCategory,
     start_epoch=ParseDateArg(args.start, "one hour ago"),
     end_epoch=ParseDateArg(args.end, "now"),
 ):
