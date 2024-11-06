@@ -18,7 +18,7 @@ script_name = os.path.basename(__file__)
 script_path = os.path.dirname(os.path.realpath(__file__))
 
 
-def mandiant_json_serializer(obj, seen_objs=None):
+def mandiant_json_serializer(obj):
     """
     JSON serializer for mandiant_threatintel.APIResponse object (for debug output)
     """
@@ -26,19 +26,19 @@ def mandiant_json_serializer(obj, seen_objs=None):
         return obj.astimezone(UTCTimeZone).isoformat()
 
     elif isinstance(obj, GeneratorType):
-        return [mandiant_json_serializer(item, seen_objs=objs) for item in obj]
+        return [mandiant_json_serializer(item) for item in obj]
 
     elif isinstance(obj, list):
-        return [mandiant_json_serializer(item, seen_objs=objs) for item in obj]
+        return [mandiant_json_serializer(item) for item in obj]
 
     elif isinstance(obj, dict):
-        return {key: mandiant_json_serializer(value, seen_objs=objs) for key, value in obj.items()}
+        return {key: mandiant_json_serializer(value) for key, value in obj.items()}
 
     elif isinstance(obj, set):
-        return {mandiant_json_serializer(item, seen_objs=objs) for item in obj}
+        return {mandiant_json_serializer(item) for item in obj}
 
     elif isinstance(obj, tuple):
-        return tuple(mandiant_json_serializer(item, seen_objs=objs) for item in obj)
+        return tuple(mandiant_json_serializer(item) for item in obj)
 
     elif isinstance(obj, FunctionType):
         return f"function {obj.__name__}" if obj.__name__ != "<lambda>" else "lambda"
@@ -60,9 +60,7 @@ def mandiant_object_as_json_str(indicator):
         {
             key: getattr(indicator, key)
             for key in indicator.__dir__()
-            if (not key.startswith("_"))
-            and (not key == 'attributed_associations')
-            and (not callable(getattr(indicator, key)))
+            if (not key.startswith("_")) and (not callable(getattr(indicator, key)))
         },
         default=mandiant_json_serializer,
     )
