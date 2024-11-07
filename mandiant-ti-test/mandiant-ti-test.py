@@ -100,6 +100,14 @@ parser.add_argument(
     help="Minimum 'mscore' or 'confidence'",
 )
 parser.add_argument(
+    '-p',
+    '--page-size',
+    dest='pageSize',
+    type=int,
+    default=1000,
+    help="Page size for API requests",
+)
+parser.add_argument(
     '-x',
     '--exclude-osint',
     dest='excludeOsInt',
@@ -205,6 +213,7 @@ mati_client = mandiant_threatintel.ThreatIntelClient(
 
 for indicator in mati_client.Indicators.get_list(
     minimum_mscore=args.score,
+    page_size=args.pageSize,
     exclude_osint=args.excludeOsInt,
     include_campaigns=args.includeCampaigns,
     include_reports=args.includeReports,
