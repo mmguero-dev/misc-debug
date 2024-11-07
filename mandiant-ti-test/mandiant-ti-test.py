@@ -104,7 +104,7 @@ parser.add_argument(
     '--page-size',
     dest='pageSize',
     type=int,
-    default=1000,
+    default=100,
     help="Page size for API requests",
 )
 parser.add_argument(
