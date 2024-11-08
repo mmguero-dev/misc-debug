@@ -58,15 +58,21 @@ def mandiant_json_serializer(obj):
         return str(obj)
 
 
-def mandiant_object_as_json_str(indicator):
+def mandiant_object_as_json_str(indicator, api_response_only=True):
     global skip_attr_map
 
     return json.dumps(
-        {
-            key: getattr(indicator, key)
-            for key in indicator.__dir__()
-            if (skip_attr_map[key] == False) and (not key.startswith("_")) and (not callable(getattr(indicator, key)))
-        },
+        (
+            indicator._api_response
+            if api_response_only
+            else {
+                key: getattr(indicator, key)
+                for key in indicator.__dir__()
+                if (skip_attr_map[key] == False)
+                and (not key.startswith("_"))
+                and (not callable(getattr(indicator, key)))
+            }
+        ),
         default=mandiant_json_serializer,
     )
 
@@ -113,7 +119,7 @@ def main():
         '--page-size',
         dest='pageSize',
         type=int,
-        default=100,
+        default=1000,
         help="Page size for API requests",
     )
     parser.add_argument(
@@ -185,6 +191,15 @@ def main():
         help="Mandiant TI API Key",
     )
     parser.add_argument(
+        '--api-response-only',
+        dest='apiResponseOnly',
+        type=mmguero.str2bool,
+        nargs='?',
+        const=True,
+        default=True,
+        help="Print JSON from API response only (vs deserialize the object)",
+    )
+    parser.add_argument(
         '--secret',
         dest='secretKey',
         metavar='<string>',
@@ -241,7 +256,7 @@ def main():
         start_epoch=ParseDateArg(args.start, "one hour ago"),
         end_epoch=ParseDateArg(args.end, "now"),
     ):
-        print(mandiant_object_as_json_str(indicator))
+        print(mandiant_object_as_json_str(indicator, api_response_only=args.apiResponseOnly))
 
 
 if __name__ == '__main__':
