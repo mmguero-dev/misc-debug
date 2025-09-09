@@ -65,7 +65,7 @@ def main():
         action='store_true',
         required=False,
         default=False,
-        help='Call `get_object` for the /download endpoint for a collection (takes precedence over --object)',
+        help='Call `get_object` for the /download endpoint for a collection ()',
     )
     parser.add_argument(
         '--object',
@@ -79,7 +79,7 @@ def main():
         action='store_true',
         required=False,
         default=False,
-        help='Dump collection details',
+        help='Dump collection dict',
     )
     parser.add_argument(
         '--after',
