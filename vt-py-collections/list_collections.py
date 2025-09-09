@@ -61,6 +61,13 @@ def main():
         help="Collection type",
     )
     parser.add_argument(
+        '--download',
+        action='store_true',
+        required=False,
+        default=False,
+        help='Call `get_object` for the /download endpoint for a collection (takes precedence over --object)',
+    )
+    parser.add_argument(
         '--object',
         action='store_true',
         required=False,
@@ -72,7 +79,7 @@ def main():
         action='store_true',
         required=False,
         default=False,
-        help='Dump collection dict',
+        help='Dump collection details',
     )
     parser.add_argument(
         '--after',
@@ -114,7 +121,16 @@ def main():
                     else None
                 ),
             ):
-                if args.object:
+                if args.download:
+                    iocDownload = client.get_json(f"/collections/{collection.id}/download/json")
+                    if isinstance(iocDownload, dict):
+                        if args.verbose:
+                            print(json.dumps({"id": collection.id} | iocDownload))
+                        elif isinstance(iocDownload, dict):
+                            print(json.dumps({"id": collection.id} | {k: len(v) for k, v in iocDownload.items()}))
+                    else:
+                        print(json.dumps(iocDownload))
+                elif args.object:
                     collectionDetails = client.get_object(f"/collections/{collection.id}")
                     if args.verbose:
                         print(json.dumps(collectionDetails.to_dict()))
