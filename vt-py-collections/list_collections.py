@@ -5,8 +5,9 @@ from datetime import datetime, timezone
 import argparse
 import asyncio
 import json
-import sys
 import os
+import sys
+import time
 import vt
 
 debug_gets = False
@@ -45,24 +46,39 @@ def iter_google_collections_since(
     searchFilter = "(" + " OR ".join(f'collection_type:"{c}"' for c in ctypes) + ")"
     if filters:
         searchFilter += f" AND ({filters})"
-    for collection in client.iterator(
-        "/collections",
-        params={
-            "filter": searchFilter,
-            # sort by last modification date descending, so we can short-circuit based on "since"
-            "order": "last_modification_date-",
-        },
-    ):
-        created_ts = collection.get("creation_date")
-        created = datetime.fromtimestamp(created_ts).astimezone(timezone.utc) if created_ts else None
-        modified_ts = collection.get("last_modification_date")
-        modified = datetime.fromtimestamp(modified_ts).astimezone(timezone.utc) if modified_ts else None
-        created, modified = created or modified, modified or created
 
-        if since and created and modified and created < since and modified < since:
-            break
+    while True:
+        try:
+            for collection in client.iterator(
+                "/collections",
+                params={
+                    "filter": searchFilter,
+                    # sort by last modification date descending, so we can short-circuit based on "since"
+                    "order": "last_modification_date-",
+                },
+            ):
+                created_ts = collection.get("creation_date")
+                created = datetime.fromtimestamp(created_ts).astimezone(timezone.utc) if created_ts else None
+                modified_ts = collection.get("last_modification_date")
+                modified = datetime.fromtimestamp(modified_ts).astimezone(timezone.utc) if modified_ts else None
+                created, modified = created or modified, modified or created
 
-        yield collection
+                if since and created and modified and created < since and modified < since:
+                    # short-circuit due to going beyond our "since" window
+                    break
+
+                yield collection
+
+            break  # finished cleanly
+
+        except vt.error.APIError as e:
+            # Retry only on server-side failures
+            if getattr(e, "code", None) == "ServerError":
+                print(f"[VT ERROR] 500 Server Error, retrying in 1s...", file=sys.stderr)
+                time.sleep(1)
+                continue
+            else:
+                raise
 
 
 def main():
@@ -170,34 +186,45 @@ def main():
                     else None
                 ),
             ):
-                if args.download:
-                    iocDownload = client.get_json(f"/collections/{collection.id}/download/json")
-                    if isinstance(iocDownload, dict):
-                        if args.verbose:
-                            print(json.dumps({"id": collection.id, "name": collection.name} | iocDownload))
-                        elif isinstance(iocDownload, dict):
-                            print(
-                                json.dumps(
-                                    {"id": collection.id, "name": collection.name}
-                                    | {k: len(v) for k, v in iocDownload.items()}
+                try:
+                    if args.download:
+                        iocDownload = client.get_json(f"/collections/{collection.id}/download/json")
+                        if isinstance(iocDownload, dict):
+                            if args.verbose:
+                                print(json.dumps({"id": collection.id, "name": collection.name} | iocDownload))
+                            elif isinstance(iocDownload, dict):
+                                print(
+                                    json.dumps(
+                                        {"id": collection.id, "name": collection.name}
+                                        | {k: len(v) for k, v in iocDownload.items()}
+                                    )
                                 )
-                            )
+                        else:
+                            print(json.dumps(iocDownload))
+                    elif args.object:
+                        collectionDetails = client.get_object(f"/collections/{collection.id}")
+                        if args.verbose:
+                            print(json.dumps(collectionDetails.to_dict()))
+                        else:
+                            print(json.dumps({"id": collectionDetails.id, "name": collectionDetails.name}))
                     else:
-                        print(json.dumps(iocDownload))
-                elif args.object:
-                    collectionDetails = client.get_object(f"/collections/{collection.id}")
-                    if args.verbose:
-                        print(json.dumps(collectionDetails.to_dict()))
+                        if args.verbose:
+                            print(json.dumps(collection.to_dict()))
+                        else:
+                            print(json.dumps({"id": collection.id, "name": collection.name}))
+                    count += 1
+                    if args.limit > 0 and count >= args.limit:
+                        break
+                except vt.error.APIError as e:
+                    print(
+                        f"[VT ERROR] Error processing {collection.id} ({collection.name}) {e.code}: {e.message}",
+                        file=sys.stderr,
+                    )
+                    if getattr(e, "code", None) == "ServerError":
+                        # Continue only on server-side failures
+                        time.sleep(1)
                     else:
-                        print(json.dumps({"id": collectionDetails.id, "name": collectionDetails.name}))
-                else:
-                    if args.verbose:
-                        print(json.dumps(collection.to_dict()))
-                    else:
-                        print(json.dumps({"id": collection.id, "name": collection.name}))
-                count += 1
-                if args.limit > 0 and count >= args.limit:
-                    break
+                        continue
 
         except KeyboardInterrupt:
             print("\nKeyboard interrupt", file=sys.stderr)
