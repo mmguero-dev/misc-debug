@@ -8,13 +8,16 @@ import json
 import sys
 import vt
 
+debug_gets = False
+
 # Keep a reference to the original vt-py Client get_async method
 _original_get_async = vt.Client.get_async
 
 
 async def debug_get_async(self, path: str, *path_args, params=None, **kwargs):
-    # Log the outgoing request
-    print(f"[VT DEBUG] GET {path} {path_args} params={params} kwargs={kwargs}", file=sys.stderr)
+    if debug_gets:
+        # Log the outgoing request
+        print(f"[VT DEBUG] GET {path} {path_args} params={params} kwargs={kwargs}", file=sys.stderr)
     # Call the original method and return its result
     return await _original_get_async(self, path, *path_args, params=params, **kwargs)
 
@@ -24,43 +27,77 @@ vt.Client.get_async = debug_get_async
 
 
 # Iterate through the /collections list, filtering by collection type and ordering by last_modification_date
-#   descending, then short-circuit when we've gotten older than our specified "after" window
-def iter_collections(client, ctype="report", after=None, before=None):
+#   descending, then short-circuit when we've gotten older than our specified "since" window
+def iter_google_collections_since(
+    client,
+    ctypes=[
+        'report',
+        'campaign',
+        'threat-actor',
+        'malware-family',
+    ],
+    filters=None,
+    since=None,
+):
+    # https://gtidocs.virustotal.com/reference/list-threats
+    # https://gtidocs.virustotal.com/reference/ioc-collection-object
+    searchFilter = "(" + " OR ".join(f'collection_type:"{c}"' for c in ctypes) + ")"
+    if filters:
+        searchFilter += f" AND ({filters})"
     for collection in client.iterator(
         "/collections",
         params={
-            "filter": f"collection_type:{ctype}",
+            "filter": searchFilter,
+            # sort by last modification date descending, so we can short-circuit based on "since"
             "order": "last_modification_date-",
         },
     ):
         created_ts = collection.get("creation_date")
         created = datetime.fromtimestamp(created_ts).astimezone(timezone.utc) if created_ts else None
         modified_ts = collection.get("last_modification_date")
-        modified = datetime.fromtimestamp(modified_ts).astimezone(timezone.utc) if modified_ts else created
+        modified = datetime.fromtimestamp(modified_ts).astimezone(timezone.utc) if modified_ts else None
+        created, modified = created or modified, modified or created
 
-        if created and modified:
-            if after and created < after and modified < after:
-                break
-            if before and created > before and modified > before:
-                continue
+        if since and created and modified and created < since and modified < since:
+            break
 
         yield collection
 
 
 def main():
+    global debug_gets
+
     parser = argparse.ArgumentParser(description="List IoC Collections")
     parser.add_argument(
+        "-a",
         "--apikey",
         required=True,
         help="your VirusTotal API key",
     )
     parser.add_argument(
-        "--ctype",
-        required=False,
-        default="report",
-        help="Collection type",
+        '-c',
+        '--ctype',
+        dest='ctypes',
+        nargs='*',
+        type=str,
+        default=[
+            'report',
+            'campaign',
+            'threat-actor',
+            'malware-family',
+        ],
+        help="Collection types",
     )
     parser.add_argument(
+        '-f',
+        '--filter',
+        dest='filters',
+        type=str,
+        default=None,
+        help="Additional filters",
+    )
+    parser.add_argument(
+        '-d',
         '--download',
         action='store_true',
         required=False,
@@ -68,6 +105,7 @@ def main():
         help='Call `get_object` for the /download endpoint for a collection ()',
     )
     parser.add_argument(
+        '-o',
         '--object',
         action='store_true',
         required=False,
@@ -75,6 +113,14 @@ def main():
         help='Call `get_object` for collection',
     )
     parser.add_argument(
+        '--debug',
+        action='store_true',
+        required=False,
+        default=False,
+        help='Debug HTTP gets',
+    )
+    parser.add_argument(
+        '-v',
         '--verbose',
         action='store_true',
         required=False,
@@ -82,20 +128,15 @@ def main():
         help='Dump collection dict',
     )
     parser.add_argument(
-        '--after',
-        dest='after',
+        '-s',
+        '--since',
+        dest='since',
         type=str,
         default="48 hours ago",
-        help="Retrieve indicators after this time (e.g., '48 hours ago')",
+        help="Retrieve indicators since this time (e.g., '48 hours ago')",
     )
     parser.add_argument(
-        '--before',
-        dest='before',
-        type=str,
-        default="24 hours ago",
-        help="Retrieve indicators before this timestamp (e.g., '24 hours ago')",
-    )
-    parser.add_argument(
+        '-l',
         '--limit',
         dest='limit',
         type=int,
@@ -104,20 +145,18 @@ def main():
     )
     args = parser.parse_args()
 
+    debug_gets = args.debug
+
     with vt.Client(args.apikey) as client:
         try:
             count = 0
-            for collection in iter_collections(
+            for collection in iter_google_collections_since(
                 client,
-                args.ctype,
-                after=(
-                    ParseDate(args.after).astimezone(timezone.utc)
-                    if (args.after is not None) and (len(args.after) > 0)
-                    else None
-                ),
-                before=(
-                    ParseDate(args.before).astimezone(timezone.utc)
-                    if (args.before is not None) and (len(args.before) > 0)
+                ctypes=args.ctypes,
+                filters=args.filters,
+                since=(
+                    ParseDate(args.since).astimezone(timezone.utc)
+                    if (args.since is not None) and (len(args.since) > 0)
                     else None
                 ),
             ):
@@ -125,9 +164,14 @@ def main():
                     iocDownload = client.get_json(f"/collections/{collection.id}/download/json")
                     if isinstance(iocDownload, dict):
                         if args.verbose:
-                            print(json.dumps({"id": collection.id} | iocDownload))
+                            print(json.dumps({"id": collection.id, "name": collection.name} | iocDownload))
                         elif isinstance(iocDownload, dict):
-                            print(json.dumps({"id": collection.id} | {k: len(v) for k, v in iocDownload.items()}))
+                            print(
+                                json.dumps(
+                                    {"id": collection.id, "name": collection.name}
+                                    | {k: len(v) for k, v in iocDownload.items()}
+                                )
+                            )
                     else:
                         print(json.dumps(iocDownload))
                 elif args.object:
@@ -135,12 +179,12 @@ def main():
                     if args.verbose:
                         print(json.dumps(collectionDetails.to_dict()))
                     else:
-                        print(json.dumps({"id": collectionDetails.id}))
+                        print(json.dumps({"id": collectionDetails.id, "name": collectionDetails.name}))
                 else:
                     if args.verbose:
                         print(json.dumps(collection.to_dict()))
                     else:
-                        print(json.dumps({"id": collection.id}))
+                        print(json.dumps({"id": collection.id, "name": collection.name}))
                 count += 1
                 if args.limit > 0 and count >= args.limit:
                     break
