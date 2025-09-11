@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import sys
+import os
 import vt
 
 debug_gets = False
@@ -73,6 +74,12 @@ def main():
         "--apikey",
         required=True,
         help="your VirusTotal API key",
+    )
+    parser.add_argument(
+        "--agent",
+        required=False,
+        default=os.path.basename(__file__),
+        help="Agent string for client",
     )
     parser.add_argument(
         '-c',
@@ -147,7 +154,10 @@ def main():
 
     debug_gets = args.debug
 
-    with vt.Client(args.apikey) as client:
+    with vt.Client(
+        args.apikey,
+        agent=args.agent,
+    ) as client:
         try:
             count = 0
             for collection in iter_google_collections_since(
