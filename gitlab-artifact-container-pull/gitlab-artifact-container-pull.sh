@@ -108,8 +108,7 @@ if [[ ! "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
   if [[ -n "${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]+x}" ]]; then
     PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]}"
   else
-    log_error "ERROR: PROJECT_ID='${PROJECT_ID}' is not numeric and not found in SERVICE_TO_PROJECT_ID_MAP[]" >&2
-    exit 1
+    PROJECT_ID=
   fi
 fi
 
