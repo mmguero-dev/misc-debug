@@ -378,8 +378,8 @@ load_docker_image() {
         return 1
     fi
 
-    log_info "Available $CONTAINER_ENGINE images (top 10):"
-    $CONTAINER_ENGINE images | head -10
+    DOCKER_INSPECT_INFO="$($CONTAINER_ENGINE inspect "$DOCKER_IMAGE_TAG" | jq)"
+    log_info "$DOCKER_INSPECT_INFO"
 }
 
 # Main execution
