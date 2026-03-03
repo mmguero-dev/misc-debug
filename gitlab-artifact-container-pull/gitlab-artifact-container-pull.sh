@@ -1,0 +1,416 @@
+#!/usr/bin/env bash
+
+# GitLab Artifacts Download Script
+# Simple script to download job artifacts from GitLab
+
+pushd "$(dirname "$(realpath "$0")")" >/dev/null 2>&1
+[[ -f ./.envrc ]] && source .envrc
+popd >/dev/null 2>&1
+
+# GitLab configuration
+ACCESS_TOKEN=${ACCESS_TOKEN:-}
+CONTAINER_ENGINE=${CONTAINER_ENGINE:-docker}
+DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-}
+GITLAB_URL=${GITLAB_URL:-}
+JOB_ID=${JOB_ID:-}
+PROJECT_ID=${PROJECT_ID:-}
+
+# Output configuration
+OUTPUT_DIR="${OUTPUT_DIR:-./artifacts}"         # default ./artifacts if unset
+CLEAN_OUTPUT_DIR="${CLEAN_OUTPUT_DIR:-true}"
+EXTRACT_ARTIFACTS="${EXTRACT_ARTIFACTS:-true}"  # default true if unset
+
+# Docker configuration
+LOAD_IMAGE="${LOAD_IMAGE:-true}"  # default true if unset
+
+declare -A SERVICE_TO_PROJECT_ID_MAP=(
+  [api]=18631
+  [arkime]=18632
+  [dashboard_helper]=18633
+  [dashboards]=18634
+  [dirinit]=18635
+  [file_monitor]=18636
+  [file_upload]=18637
+  [filebeat]=18638
+  [filescan]=18796
+  [freq]=18639
+  [htadmin]=18640
+  [keycloak]=18641
+  [logstash_oss]=18642
+  [netbox]=18643
+  [nginx]=18644
+  [opensearch]=18645
+  [pcap_capture]=18646
+  [pcap_monitor]=18647
+  [postgresql]=18648
+  [redis]=18649
+  [strelka_backend]=18797
+  [strelka_frontend]=18798
+  [strelka_manager]=18799
+  [suricata]=18650
+  [zeek]=18651
+)
+
+# ---------------------------------------------------------------------------
+# CLI argument parsing
+# ---------------------------------------------------------------------------
+
+usage() {
+  cat <<EOF
+Usage: $0 [options]
+
+Options:
+  -g, --gitlab URL          GitLab URL
+  -p, --project-id ID       GitLab project ID (sets PROJECT_ID)
+  -j, --job-id ID           GitLab job ID (sets JOB_ID)
+  -t, --tag TAG             Docker image tag to apply after loading (sets DOCKER_IMAGE_TAG)
+  -k, --token TOKEN         REPO1 access token (sets ACCESS_TOKEN)
+  -h, --help                Show this help and exit
+EOF
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -g|--gitlab)
+      GITLAB_URL="$2"
+      shift 2
+      ;;
+    -p|--project-id)
+      PROJECT_ID="$2"
+      shift 2
+      ;;
+    -j|--job-id)
+      JOB_ID="$2"
+      shift 2
+      ;;
+    -t|--tag)
+      DOCKER_IMAGE_TAG="$2"
+      shift 2
+      ;;
+    -k|--token)
+      ACCESS_TOKEN="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      ;;
+    *)
+      echo "Unknown option: $1"
+      usage
+      ;;
+  esac
+done
+
+# If $PROJECT_ID isn't all digits, treat it as a name and map via the SERVICE_TO_PROJECT_ID_MAP array
+if [[ ! "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
+  PROJECT_ID="${PROJECT_ID//-/_}"
+  if [[ -n "${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]+x}" ]]; then
+    PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]}"
+  else
+    log_error "ERROR: PROJECT_ID='${PROJECT_ID}' is not numeric and not found in SERVICE_TO_PROJECT_ID_MAP[]" >&2
+    exit 1
+  fi
+fi
+
+prompt_if_unset() {
+  local var_name="$1"
+  local prompt_msg="${2:-Enter value for $var_name:}"
+
+  # Check if the variable is unset or empty
+  if [ -z "${!var_name}" ]; then
+    # Use -s for the access token to hide typing
+    if [ "$var_name" == "ACCESS_TOKEN" ]; then
+      read -sp "$prompt_msg" input_value
+      echo "" # Add a newline since 'read -s' doesn't provide one
+    else
+      read -p "$prompt_msg" input_value
+    fi
+
+    export "$var_name"="$input_value"
+
+    # Only echo the value if it's NOT the access token
+    if [ "$var_name" != "ACCESS_TOKEN" ]; then
+      echo "$var_name has been set to '$input_value'"
+    else
+      echo "$var_name has been set (value hidden for security)"
+    fi
+  else
+    # Mask the token even when it's already set
+    if [ "$var_name" == "ACCESS_TOKEN" ]; then
+      echo "$var_name is already set (value hidden)"
+    else
+      echo "$var_name is already set to '${!var_name}'"
+    fi
+  fi
+}
+
+prompt_if_unset "GITLAB_URL" "Please enter the GitLab URL: "
+prompt_if_unset "ACCESS_TOKEN" "Please enter your GitLab access token: "
+prompt_if_unset "PROJECT_ID" "Please enter the GitLab project ID: "
+prompt_if_unset "JOB_ID" "Please enter the GitLab job ID from repo: "
+
+# =============================================================================
+# SCRIPT - Don't edit below this line
+# =============================================================================
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if required tools are available
+check_dependencies() {
+    if ! command -v curl >/dev/null 2>&1; then
+        log_error "curl is required but not installed"
+        exit 1
+    fi
+    
+    if ! command -v jq >/dev/null 2>&1; then
+        log_error "jq is required but not installed"
+        exit 1
+    fi
+    
+    if [ "$EXTRACT_ARTIFACTS" = "true" ] && ! command -v unzip >/dev/null 2>&1; then
+        log_error "unzip is required but not installed"
+        exit 1
+    fi
+    
+    if [ "$LOAD_IMAGE" = "true" ] && ! command -v "$CONTAINER_ENGINE" >/dev/null 2>&1; then
+        log_error "$CONTAINER_ENGINE is required but not installed"
+        exit 1
+    fi
+}
+
+# Validate configuration
+validate_config() {
+    if [ -z "$PROJECT_ID" ]; then
+        log_error "PROJECT_ID is not set"
+        exit 1
+    fi
+    
+    if [ -z "$JOB_ID" ]; then
+        log_error "JOB_ID is not set"
+        exit 1
+    fi
+    
+    if [ -z "$ACCESS_TOKEN" ]; then
+        log_error "ACCESS_TOKEN is not set"
+        exit 1
+    fi
+}
+
+# Get job information
+get_job_info() {
+    job_url="${GITLAB_URL}/api/v4/projects/${PROJECT_ID}/jobs/${JOB_ID}"
+    
+    log_info "Fetching job information from $job_url"
+    
+    # Use -L to follow redirects and save to temp file to handle newlines properly
+    temp_file=$(mktemp)
+    curl -s -L -H "PRIVATE-TOKEN: ${ACCESS_TOKEN}" "$job_url" -o "$temp_file"
+    
+    # Check if response is valid JSON
+    if ! cat "$temp_file" | jq . >/dev/null 2>&1; then
+        log_error "Invalid JSON response from GitLab API"
+        log_info "Response: $(cat "$temp_file")"
+        rm -f "$temp_file"
+        exit 1
+    fi
+   
+    # Read the response from the temp file
+    response=$(cat "$temp_file")
+    rm -f "$temp_file"
+    
+    if echo "$response" | jq -e '.message' >/dev/null 2>&1; then
+        error_msg=$(echo "$response" | jq -r '.message')
+        log_error "Failed to fetch job info: $error_msg"
+        exit 1
+    fi
+    
+    job_name=$(echo "$response" | jq -r '.name')
+    job_status=$(echo "$response" | jq -r '.status')
+    
+    log_info "Job: $job_name (Status: $job_status)"
+    
+    if [ "$job_status" != "success" ]; then
+        log_warn "Job status is '$job_status', not 'success'. Artifacts may not be available."
+    fi
+}
+
+# Download job artifacts
+download_artifacts() {
+    artifacts_url="${GITLAB_URL}/api/v4/projects/${PROJECT_ID}/jobs/${JOB_ID}/artifacts"
+    output_file="${OUTPUT_DIR}/artifacts.zip"
+
+    # Clean previous run if requested
+    if [ "$CLEAN_OUTPUT_DIR" = "true" ] && [ -d "$OUTPUT_DIR" ]; then
+        log_info "Cleaning output directory: $OUTPUT_DIR"
+        rm -rf "$OUTPUT_DIR"
+    fi
+    
+    # Create output directory
+    mkdir -p "$OUTPUT_DIR"
+    
+    # Download artifacts (follow redirects)
+    log_info "Downloading artifacts from job $JOB_ID..."
+    http_code=$(curl -s -L -w "%{http_code}" -o "$output_file" -H "PRIVATE-TOKEN: ${ACCESS_TOKEN}" "$artifacts_url")
+    
+    if [ "$http_code" -eq 404 ]; then
+        log_error "Artifacts not found for job $JOB_ID. The job may not have artifacts or they may have expired."
+        exit 1
+    elif [ "$http_code" -eq 401 ]; then
+        log_error "Authentication failed. Please check your access token."
+        exit 1
+    elif [ "$http_code" -ne 200 ]; then
+        log_error "Failed to download artifacts. HTTP status: $http_code"
+        exit 1
+    fi
+    
+    log_info "Artifacts downloaded to: $output_file"
+    
+    if [ "$EXTRACT_ARTIFACTS" = "true" ]; then
+        log_info "Extracting artifacts..."
+        unzip -q "$output_file" -d "$OUTPUT_DIR"
+        log_info "Artifacts extracted to: $OUTPUT_DIR"
+        
+        # List extracted files
+        log_info "Extracted files:"
+        find "$OUTPUT_DIR" -type f -not -name "artifacts.zip" | head -20
+        file_count=$(find "$OUTPUT_DIR" -type f -not -name "artifacts.zip" | wc -l)
+        if [ "$file_count" -gt 20 ]; then
+            log_info "... and $((file_count - 20)) more files"
+        fi
+        
+        # Load Docker image if enabled
+        if [ "$LOAD_IMAGE" = "true" ]; then
+            load_docker_image
+        fi
+    else
+        log_info "Artifacts saved as zip file: $output_file"
+    fi
+}
+
+# Load Docker image from extracted artifacts
+load_docker_image() {
+    log_info "Looking for $CONTAINER_ENGINE image in extracted artifacts..."
+
+    # Prefer tars under ci-artifacts/tar/... if present
+    tar_file=$(find "$OUTPUT_DIR" -path "*/ci-artifacts/tar/*/*.tar" -type f | head -1)
+
+    if [ -z "$tar_file" ]; then
+        log_warn "No tar found under ci-artifacts/tar/; falling back to any *.tar in $OUTPUT_DIR"
+        tar_file=$(find "$OUTPUT_DIR" -type f -name "*.tar" | head -1)
+    fi
+
+    if [ -z "$tar_file" ]; then
+        log_error "No $CONTAINER_ENGINE tar file found in artifacts"
+        log_info "Searched in: $OUTPUT_DIR"
+        return 1
+    fi
+
+    log_info "Using tar file: $tar_file"
+
+    # If no tag was provided, derive one from the tar filename
+    if [ -z "$DOCKER_IMAGE_TAG" ]; then
+        tar_base="$(basename "$tar_file")"     # e.g. misp-modules-4698286-amd64.tar
+        tar_noext="${tar_base%.tar}"           # misp-modules-4698286-amd64
+
+        # Try to strip trailing "-<digits>..." (e.g. "-4698286-amd64")
+        default_name="${tar_noext%%-[0-9]*}"   # -> misp-modules
+
+        # If nothing was stripped (no -<digits> pattern), fall back to dropping last dash segment
+        if [ "$default_name" = "$tar_noext" ]; then
+            default_name="${tar_noext%-*}"
+        fi
+
+        # Append our marker suffix and :latest tag
+        DOCKER_IMAGE_TAG="${default_name}-cibuild:latest"
+        export DOCKER_IMAGE_TAG
+
+        log_info "No $CONTAINER_ENGINE image tag provided; defaulting to: $DOCKER_IMAGE_TAG"
+    fi
+
+    log_info "Loading $CONTAINER_ENGINE image..."
+    load_output=$("$CONTAINER_ENGINE" load -i "$tar_file" 2>&1)
+    rc=$?
+
+    echo "$load_output"
+
+    if [ $rc -ne 0 ]; then
+        log_error "Failed to load $CONTAINER_ENGINE image from: $tar_file"
+        return 1
+    fi
+
+    # 1) Try to get a named image from "Loaded image: repo/name:tag"
+    loaded_image=$(echo "$load_output" | awk -F': ' '/Loaded image:/ {print $2}' | head -1)
+
+    # 2) If no name, look for "Loaded image ID: sha256:..."
+    if [ -z "$loaded_image" ]; then
+        image_id=$(echo "$load_output" | awk -F'ID: ' '/Loaded image ID:/ {print $2}' | head -1)
+        if [ -z "$image_id" ]; then
+            log_error "$CONTAINER_ENGINE load output did not contain 'Loaded image:' or 'Loaded image ID:'; not tagging anything."
+            return 1
+        fi
+        loaded_image="$image_id"
+    fi
+
+    log_info "Loaded image reference: $loaded_image"
+    log_info "Tagging image as: $DOCKER_IMAGE_TAG"
+
+    if "$CONTAINER_ENGINE" tag "$loaded_image" "$DOCKER_IMAGE_TAG"; then
+        log_info "Successfully tagged image as: $DOCKER_IMAGE_TAG"
+    else
+        log_error "Failed to tag image"
+        return 1
+    fi
+
+    log_info "Available $CONTAINER_ENGINE images (top 10):"
+    $CONTAINER_ENGINE images | head -10
+}
+
+# Main execution
+main() {
+    log_info "GitLab Artifacts Downloader"
+    log_info "=========================="
+    
+    validate_config
+    check_dependencies
+    
+    log_info "Configuration:"
+    log_info "  GitLab URL: $GITLAB_URL"
+    log_info "  Project ID: $PROJECT_ID"
+    log_info "  Job ID: $JOB_ID"
+    log_info "  Output Directory: $OUTPUT_DIR"
+    log_info "  Extract Artifacts: $EXTRACT_ARTIFACTS"
+    log_info "  Load $CONTAINER_ENGINE Image: $LOAD_IMAGE"
+    if [ "$LOAD_IMAGE" = "true" ]; then
+        if [ -n "$DOCKER_IMAGE_TAG" ]; then
+            log_info "  $CONTAINER_ENGINE Image Tag (preconfigured): $DOCKER_IMAGE_TAG"
+        else
+            log_info "  $CONTAINER_ENGINE Image Tag: (will be derived from artifacts tar)"
+        fi
+    fi
+    
+    get_job_info
+    download_artifacts
+    
+    log_info "Download completed successfully!"
+}
+
+# Run main function
+main
