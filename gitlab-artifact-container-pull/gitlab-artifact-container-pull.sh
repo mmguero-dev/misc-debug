@@ -8,7 +8,7 @@ pushd "$(dirname "$(realpath "$0")")" >/dev/null 2>&1
 popd >/dev/null 2>&1
 
 # GitLab configuration
-ACCESS_TOKEN=${ACCESS_TOKEN:-}
+GITLAB_ACCESS_TOKEN=${GITLAB_ACCESS_TOKEN:-}
 CONTAINER_ENGINE=${CONTAINER_ENGINE:-docker}
 DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-}
 GITLAB_URL=${GITLAB_URL:-}
@@ -64,7 +64,7 @@ Options:
   -p, --project-id ID       GitLab project ID (sets PROJECT_ID)
   -j, --job-id ID           GitLab job ID (sets JOB_ID)
   -t, --tag TAG             Docker image tag to apply after loading (sets DOCKER_IMAGE_TAG)
-  -k, --token TOKEN         REPO1 access token (sets ACCESS_TOKEN)
+  -k, --token TOKEN         GitLab access token (sets GITLAB_ACCESS_TOKEN)
   -h, --help                Show this help and exit
 EOF
   exit 1
@@ -89,7 +89,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -k|--token)
-      ACCESS_TOKEN="$2"
+      GITLAB_ACCESS_TOKEN="$2"
       shift 2
       ;;
     -h|--help)
@@ -120,7 +120,7 @@ prompt_if_unset() {
   # Check if the variable is unset or empty
   if [ -z "${!var_name}" ]; then
     # Use -s for the access token to hide typing
-    if [ "$var_name" == "ACCESS_TOKEN" ]; then
+    if [ "$var_name" == "GITLAB_ACCESS_TOKEN" ]; then
       read -sp "$prompt_msg" input_value
       echo "" # Add a newline since 'read -s' doesn't provide one
     else
@@ -130,14 +130,14 @@ prompt_if_unset() {
     export "$var_name"="$input_value"
 
     # Only echo the value if it's NOT the access token
-    if [ "$var_name" != "ACCESS_TOKEN" ]; then
+    if [ "$var_name" != "GITLAB_ACCESS_TOKEN" ]; then
       echo "$var_name has been set to '$input_value'"
     else
       echo "$var_name has been set (value hidden for security)"
     fi
   else
     # Mask the token even when it's already set
-    if [ "$var_name" == "ACCESS_TOKEN" ]; then
+    if [ "$var_name" == "GITLAB_ACCESS_TOKEN" ]; then
       echo "$var_name is already set (value hidden)"
     else
       echo "$var_name is already set to '${!var_name}'"
@@ -146,7 +146,7 @@ prompt_if_unset() {
 }
 
 prompt_if_unset "GITLAB_URL" "Please enter the GitLab URL: "
-prompt_if_unset "ACCESS_TOKEN" "Please enter your GitLab access token: "
+prompt_if_unset "GITLAB_ACCESS_TOKEN" "Please enter your GitLab access token: "
 prompt_if_unset "PROJECT_ID" "Please enter the GitLab project ID: "
 prompt_if_unset "JOB_ID" "Please enter the GitLab job ID from repo: "
 
@@ -208,8 +208,8 @@ validate_config() {
         exit 1
     fi
     
-    if [ -z "$ACCESS_TOKEN" ]; then
-        log_error "ACCESS_TOKEN is not set"
+    if [ -z "$GITLAB_ACCESS_TOKEN" ]; then
+        log_error "GITLAB_ACCESS_TOKEN is not set"
         exit 1
     fi
 }
@@ -222,7 +222,7 @@ get_job_info() {
     
     # Use -L to follow redirects and save to temp file to handle newlines properly
     temp_file=$(mktemp)
-    curl -s -L -H "PRIVATE-TOKEN: ${ACCESS_TOKEN}" "$job_url" -o "$temp_file"
+    curl -s -L -H "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" "$job_url" -o "$temp_file"
     
     # Check if response is valid JSON
     if ! cat "$temp_file" | jq . >/dev/null 2>&1; then
@@ -268,7 +268,7 @@ download_artifacts() {
     
     # Download artifacts (follow redirects)
     log_info "Downloading artifacts from job $JOB_ID..."
-    http_code=$(curl -s -L -w "%{http_code}" -o "$output_file" -H "PRIVATE-TOKEN: ${ACCESS_TOKEN}" "$artifacts_url")
+    http_code=$(curl -s -L -w "%{http_code}" -o "$output_file" -H "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" "$artifacts_url")
     
     if [ "$http_code" -eq 404 ]; then
         log_error "Artifacts not found for job $JOB_ID. The job may not have artifacts or they may have expired."

@@ -1,5 +1,5 @@
-export GITLAB_URL=https://repo1.dso.mil
-export ACCESS_TOKEN=
+export GITLAB_URL=https://repo.example.org
+export GITLAB_ACCESS_TOKEN=
 
 export PROJECT_ID=
 export JOB_ID=
