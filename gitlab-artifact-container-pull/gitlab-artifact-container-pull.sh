@@ -102,15 +102,24 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# If $PROJECT_ID isn't all digits, treat it as a name and map via the SERVICE_TO_PROJECT_ID_MAP array
-if [[ ! "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
-  PROJECT_ID="${PROJECT_ID//-/_}"
-  if [[ -n "${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]+x}" ]]; then
-    PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]}"
-  else
-    PROJECT_ID=
-  fi
-fi
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 prompt_if_unset() {
   local var_name="$1"
@@ -130,46 +139,18 @@ prompt_if_unset() {
 
     # Only echo the value if it's NOT the access token
     if [ "$var_name" != "GITLAB_ACCESS_TOKEN" ]; then
-      echo "$var_name has been set to '$input_value'"
+      log_info "$var_name has been set to '$input_value'"
     else
-      echo "$var_name has been set (value hidden for security)"
+      log_info "$var_name has been set (value hidden for security)"
     fi
   else
     # Mask the token even when it's already set
     if [ "$var_name" == "GITLAB_ACCESS_TOKEN" ]; then
-      echo "$var_name is already set (value hidden)"
+      log_info "$var_name is already set (value hidden)"
     else
-      echo "$var_name is already set to '${!var_name}'"
+      log_info "$var_name is already set to '${!var_name}'"
     fi
   fi
-}
-
-prompt_if_unset "GITLAB_URL" "Please enter the GitLab URL: "
-prompt_if_unset "GITLAB_ACCESS_TOKEN" "Please enter your GitLab access token: "
-prompt_if_unset "PROJECT_ID" "Please enter the GitLab project ID: "
-prompt_if_unset "JOB_ID" "Please enter the GitLab job ID from repo: "
-
-# =============================================================================
-# SCRIPT - Don't edit below this line
-# =============================================================================
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Logging functions
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 # Check if required tools are available
@@ -213,6 +194,35 @@ validate_config() {
     fi
 }
 
+# Get last job matching the given name
+get_latest_job_id_by_name() {
+  local name="$1"
+
+  local page=1
+  while :; do
+    # Fetch once per page; if GitLab returns HTML/errors, jq will fail and we abort.
+    local body
+    body="$(curl -fsSL -H "Authorization: Bearer $GITLAB_ACCESS_TOKEN" \
+      "$GITLAB_URL/api/v4/projects/$PROJECT_ID/jobs?per_page=100&page=$page")" || return 2
+
+    # If jq chokes, stop immediately.
+    local id
+    id="$(jq -er --arg name "$name" '
+      (map(select(.name==$name)) | .[0].id) // empty
+    ' 2>/dev/null <<<"$body")" || return 3
+
+    if [[ -n "$id" ]]; then
+      printf '%s\n' "$id"
+      return 0
+    fi
+
+    # No match on this page. If the page is empty, we’re done.
+    jq -e 'length > 0' <<<"$body" >/dev/null || return 1
+
+    page=$((page+1))
+  done
+}
+
 # Get job information
 get_job_info() {
     job_url="${GITLAB_URL}/api/v4/projects/${PROJECT_ID}/jobs/${JOB_ID}"
@@ -221,7 +231,7 @@ get_job_info() {
     
     # Use -L to follow redirects and save to temp file to handle newlines properly
     temp_file=$(mktemp)
-    curl -s -L -H "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" "$job_url" -o "$temp_file"
+    curl -s -L -H "Authorization: Bearer ${GITLAB_ACCESS_TOKEN}" "$job_url" -o "$temp_file"
     
     # Check if response is valid JSON
     if ! cat "$temp_file" | jq . >/dev/null 2>&1; then
@@ -267,7 +277,7 @@ download_artifacts() {
     
     # Download artifacts (follow redirects)
     log_info "Downloading artifacts from job $JOB_ID..."
-    http_code=$(curl -s -L -w "%{http_code}" -o "$output_file" -H "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" "$artifacts_url")
+    http_code=$(curl -s -L -w "%{http_code}" -o "$output_file" -H "Authorization: Bearer ${GITLAB_ACCESS_TOKEN}" "$artifacts_url")
     
     if [ "$http_code" -eq 404 ]; then
         log_error "Artifacts not found for job $JOB_ID. The job may not have artifacts or they may have expired."
@@ -410,6 +420,30 @@ main() {
     
     log_info "Download completed successfully!"
 }
+
+# If $PROJECT_ID isn't all digits, treat it as a name and map via the SERVICE_TO_PROJECT_ID_MAP array
+if [[ ! "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
+  PROJECT_ID="${PROJECT_ID//-/_}"
+  if [[ -n "${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]+x}" ]]; then
+    PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[$PROJECT_ID]}"
+  else
+    PROJECT_ID=
+  fi
+fi
+
+prompt_if_unset "GITLAB_URL" "Please enter the GitLab URL: "
+prompt_if_unset "GITLAB_ACCESS_TOKEN" "Please enter your GitLab access token: "
+prompt_if_unset "PROJECT_ID" "Please enter the GitLab project ID: "
+
+# if $JOB_ID isn't all digits, treat it as a job name to look up (the most recent job with that name)
+if [[ -n "${JOB_ID}" ]] && [[ ! "${JOB_ID}" =~ ^[0-9]+$ ]]; then
+  OLD_JOB_ID=$JOB_ID
+  JOB_ID="$(get_latest_job_id_by_name "${OLD_JOB_ID}")"
+  [[ -n "$JOB_ID" ]] && \
+    log_info "Found \"${JOB_ID}\" as most recent job for \"${OLD_JOB_ID}\"" || \
+    log_warn "Did not find most recent job for \"${OLD_JOB_ID}\""
+fi
+prompt_if_unset "JOB_ID" "Please enter the GitLab job ID from repo: "
 
 # Run main function
 main

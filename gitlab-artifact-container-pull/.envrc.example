@@ -2,7 +2,7 @@ export GITLAB_URL=https://repo.example.org
 export GITLAB_ACCESS_TOKEN=
 
 export PROJECT_ID=
-export JOB_ID=
+export JOB_ID=create-tar
 
 export OUTPUT_DIR=./artifacts
 export CLEAN_OUTPUT_DIR=true
