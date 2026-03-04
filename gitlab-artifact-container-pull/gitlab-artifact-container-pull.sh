@@ -2,7 +2,12 @@
 # GitLab Artifacts Download Script
 # Simple script to download job artifacts from GitLab
 pushd "$(dirname "$(realpath "$0")")" >/dev/null 2>&1
-[[ -f ./.envrc ]] && source .envrc
+pwd
+if [[ -f ./globalenviron ]]; then
+    source globalenviron
+elif [[ -f ./.envrc ]]; then
+    source .envrc
+fi
 popd >/dev/null 2>&1
 
 # GitLab configuration
@@ -22,6 +27,7 @@ EXTRACT_ARTIFACTS="${EXTRACT_ARTIFACTS:-true}"  # default true if unset
 LOAD_IMAGE="${LOAD_IMAGE:-true}"  # default true if unset
 
 declare -A SERVICE_TO_PROJECT_ID_MAP=(
+# Malcolm IB project IDs
   [api]=18631
   [arkime]=18632
   [dashboard_helper]=18633
@@ -47,6 +53,27 @@ declare -A SERVICE_TO_PROJECT_ID_MAP=(
   [strelka_manager]=18799
   [suricata]=18650
   [zeek]=18651
+#Elastic IB project IDs
+  [distribution]=18630
+  [edr-agent-store]=18470
+  [elastic-agent-fips]=18468
+  [elasticsearch-fips]=18062
+  [filebeat-fips]=18469
+  [kibana-fips]=18063
+# Other IB project IDs
+  [flux-cli]=18776
+  [gitea]=18694
+  [kafka]=18626
+  [kafka-ui]=18627
+  [kafka-operator]=18628
+  [mariadb-galera]=18699
+  [mariadb-operator]=18719
+  [misp-core]=17848
+  [misp-modules]=18066
+  [pgpool]=18766
+  [postgresql-repmgr]=18767
+  [valkey]=18768
+  [wiki]=18629
 )
 
 # ---------------------------------------------------------------------------
@@ -115,6 +142,40 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+prompt_select_project() {
+  local -a services
+  mapfile -t services < <(printf '%s\n' "${!SERVICE_TO_PROJECT_ID_MAP[@]}" | sort)
+  echo ""
+  echo "Select a project:"
+  local i=1
+  for svc in "${services[@]}"; do
+    printf "  %2d) %s (project ID: %s)\n" "$i" "$svc" "${SERVICE_TO_PROJECT_ID_MAP[$svc]}"
+    ((i++))
+  done
+  echo ""
+  read -p "Enter number or service name: " selection
+
+  if [[ "$selection" =~ ^[0-9]+$ ]]; then
+    if (( selection >= 1 && selection <= ${#services[@]} )); then
+      PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[${services[$((selection-1))]}]}"
+      log_info "PROJECT_ID set to ${PROJECT_ID} (${services[$((selection-1))]})"
+    else
+      log_error "Invalid selection: $selection"
+      exit 1
+    fi
+  else
+    selection="${selection//-/_}"
+    if [[ -n "${SERVICE_TO_PROJECT_ID_MAP[$selection]+x}" ]]; then
+      PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[$selection]}"
+      log_info "PROJECT_ID set to ${PROJECT_ID} ($selection)"
+    else
+      log_error "Unknown service: $selection"
+      exit 1
+    fi
+  fi
+  export PROJECT_ID
 }
 
 prompt_if_unset() {
@@ -401,7 +462,8 @@ main() {
 }
 
 # If ${PROJECT_ID} isn't all digits, treat it as a name and map via the SERVICE_TO_PROJECT_ID_MAP array
-if [[ ! "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
+# Skip when empty - using empty subscript causes "bad array subscript" error
+if [[ -n "${PROJECT_ID}" ]] && [[ ! "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
   PROJECT_ID="${PROJECT_ID//-/_}"
   if [[ -n "${SERVICE_TO_PROJECT_ID_MAP[${PROJECT_ID}]+x}" ]]; then
     PROJECT_ID="${SERVICE_TO_PROJECT_ID_MAP[${PROJECT_ID}]}"
@@ -412,7 +474,11 @@ fi
 
 prompt_if_unset "GITLAB_URL" "Please enter the GitLab URL: "
 prompt_if_unset "GITLAB_ACCESS_TOKEN" "Please enter your GitLab access token: "
-prompt_if_unset "PROJECT_ID" "Please enter the GitLab project ID: "
+if [[ -z "${PROJECT_ID}" ]]; then
+  prompt_select_project
+else
+  log_info "PROJECT_ID is already set to '${PROJECT_ID}'"
+fi
 
 # if ${JOB_ID} isn't all digits, treat it as a job name to look up (the most recent job with that name)
 if [[ -n "${JOB_ID}" ]] && [[ ! "${JOB_ID}" =~ ^[0-9]+$ ]]; then
