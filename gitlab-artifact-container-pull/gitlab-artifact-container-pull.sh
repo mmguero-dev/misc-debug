@@ -517,4 +517,4 @@ fi
 prompt_if_unset "JOB_ID" "Please enter the GitLab job ID from repo: "
 
 # Run main function
-# main
+main
