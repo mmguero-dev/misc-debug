@@ -17,6 +17,7 @@ DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-}
 GITLAB_URL=${GITLAB_URL:-}
 JOB_ID=${JOB_ID:-}
 PROJECT_ID=${PROJECT_ID:-}
+PROJECT_BRANCH=${PROJECT_BRANCH:-}
 
 # Output configuration
 OUTPUT_DIR="${OUTPUT_DIR:-./artifacts}"         # default ./artifacts if unset
@@ -85,6 +86,7 @@ Usage: ${0} [options]
 Options:
   -g, --gitlab URL          GitLab URL
   -p, --project-id ID       GitLab project ID (sets PROJECT_ID)
+  -b, --project-branch ID   GitLab project branch name (sets PROJECT_BRANCH)
   -j, --job-id ID           GitLab job ID (sets JOB_ID)
   -t, --tag TAG             Docker image tag to apply after loading (sets DOCKER_IMAGE_TAG)
   -k, --token TOKEN         GitLab access token (sets GITLAB_ACCESS_TOKEN)
@@ -101,6 +103,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p|--project-id)
       PROJECT_ID="$2"
+      shift 2
+      ;;
+    -b|--project-branch)
+      PROJECT_BRANCH="$2"
       shift 2
       ;;
     -j|--job-id)
@@ -246,29 +252,44 @@ validate_config() {
     fi
 }
 
-# Get last job matching the given name
+# Get last job (and ref) matching the given name (and branch, if specified)
+# e.g.:
+#   - '55663169;main'
+#   - '55664271;development'
 get_latest_job_id_by_name() {
   local name="$1"
+  local branch="$2"
   local page=1
+
   while :; do
-    # Fetch once per page; if GitLab returns HTML/errors, jq will fail and we abort.
     local body
     body="$(curl -fsSL -H "Authorization: Bearer ${GITLAB_ACCESS_TOKEN}" \
       "${GITLAB_URL}/api/v4/projects/${PROJECT_ID}/jobs?per_page=100&page=${page}")" || return 2
 
-    # If jq chokes, stop immediately.
-    local id
-    id="$(jq -er --arg name "${name}" '
-      (map(select(.name==$name)) | .[0].id) // empty
-    ' 2>/dev/null <<<"${body}")" || return 3
+    local out
+    out="$(
+      jq -er \
+        --arg name "$name" \
+        --arg branch "$branch" \
+        --argjson use_branch "$( [[ -n "$branch" ]] && echo true || echo false )" '
+          map(
+            select(
+              .name == $name
+              and ( ($use_branch | not) or (.ref == $branch) )
+            )
+          )
+          | .[0]
+          | select(. != null)
+          | "\(.id);\(.ref)"
+        ' 2>/dev/null <<<"$body"
+    )" || return 3
 
-    if [[ -n "${id}" ]]; then
-      printf '%s\n' "${id}"
+    if [[ -n "$out" ]]; then
+      printf '%s\n' "$out"
       return 0
     fi
 
-    # No match on this page. If the page is empty, we’re done.
-    jq -e 'length > 0' <<<"${body}" >/dev/null || return 1
+    jq -e 'length > 0' <<<"$body" >/dev/null || return 1
     page=$((page+1))
   done
 }
@@ -483,13 +504,17 @@ fi
 # if ${JOB_ID} isn't all digits, treat it as a job name to look up (the most recent job with that name)
 if [[ -n "${JOB_ID}" ]] && [[ ! "${JOB_ID}" =~ ^[0-9]+$ ]]; then
   OLD_JOB_ID=${JOB_ID}
-  JOB_ID="$(get_latest_job_id_by_name "${OLD_JOB_ID}")"
-  [[ -n "${JOB_ID}" ]] && \
-    log_info "Found \"${JOB_ID}\" as most recent job for \"${OLD_JOB_ID}\"" || \
+  JOB_ID="$(get_latest_job_id_by_name "${OLD_JOB_ID}" "${PROJECT_BRANCH}")"
+  if [[ -n "${JOB_ID}" ]]; then
+    IFS=';' read -ra JOB_ID_ARR <<< "${JOB_ID}"
+    log_info "Found \"${JOB_ID_ARR[0]}\" (in \"${JOB_ID_ARR[1]}\") as most recent job for \"${OLD_JOB_ID}\""
+    JOB_ID=${JOB_ID_ARR[0]}
+  else
     log_warn "Did not find most recent job for \"${OLD_JOB_ID}\""
+  fi
 fi
 
 prompt_if_unset "JOB_ID" "Please enter the GitLab job ID from repo: "
 
 # Run main function
-main
+# main
