@@ -31,7 +31,7 @@ declare -A SERVICE_TO_PROJECT_ID_MAP=(
 # Malcolm IB project IDs
   [api]=18631
   [arkime]=18632
-  [dashboard_helper]=18633
+  [dashboards_helper]=18633
   [dashboards]=18634
   [dirinit]=18635
   [file_monitor]=18636
