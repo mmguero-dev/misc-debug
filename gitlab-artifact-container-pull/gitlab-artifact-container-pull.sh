@@ -27,6 +27,8 @@ EXTRACT_ARTIFACTS="${EXTRACT_ARTIFACTS:-true}"  # default true if unset
 # Docker configuration
 LOAD_IMAGE="${LOAD_IMAGE:-true}"  # default true if unset
 
+VERBOSE=0
+
 declare -A SERVICE_TO_PROJECT_ID_MAP=(
 # Malcolm IB project IDs
   [api]=18631
@@ -91,6 +93,7 @@ Options:
   -t, --tag TAG             Docker image tag to apply after loading (sets DOCKER_IMAGE_TAG)
   -k, --token TOKEN         GitLab access token (sets GITLAB_ACCESS_TOKEN)
   -h, --help                Show this help and exit
+  -v, --verbose             set -x
 EOF
   exit 1
 }
@@ -123,13 +126,20 @@ while [[ $# -gt 0 ]]; do
       ;;
     -h|--help)
       usage
+      shift 1
+      ;;
+    -v|--verbose)
+      VERBOSE=1
+      shift 1
       ;;
     *)
       echo "Unknown option: $1"
       usage
+      shift 1
       ;;
   esac
 done
+[[ $VERBOSE == 1 ]] && set -x
 
 # Colors for output
 RED='\033[0;31m'
@@ -262,26 +272,44 @@ get_latest_job_id_by_name() {
   local page=1
 
   while :; do
+    local tmp_headers
+    tmp_headers="$(mktemp)" || return 4
+
     local body
-    body="$(curl -fsSL -H "Authorization: Bearer ${GITLAB_ACCESS_TOKEN}" \
-      "${GITLAB_URL}/api/v4/projects/${PROJECT_ID}/jobs?per_page=100&page=${page}")" || return 2
+    body="$(
+      curl -fsSL \
+        -D "$tmp_headers" \
+        -H "Authorization: Bearer ${GITLAB_ACCESS_TOKEN}" \
+        "${GITLAB_URL}/api/v4/projects/${PROJECT_ID}/jobs?per_page=100&page=${page}"
+    )"
+    local curl_rc=$?
+
+    if [[ -n "$tmp_headers" && -f "$tmp_headers" ]]; then
+      local next_page
+      next_page="$(
+        awk -F': *' 'BEGIN{IGNORECASE=1} $1=="X-Next-Page"{gsub(/\r/,"",$2); print $2}' "$tmp_headers" \
+          | tail -n1
+      )"
+      rm -f "$tmp_headers"
+    fi
+
+    (( curl_rc == 0 )) || return 2
 
     local out
     out="$(
-      jq -er \
+      jq -r \
         --arg name "$name" \
         --arg branch "$branch" \
         --argjson use_branch "$( [[ -n "$branch" ]] && echo true || echo false )" '
-          map(
-            select(
-              .name == $name
-              and ( ($use_branch | not) or (.ref == $branch) )
-            )
-          )
-          | .[0]
-          | select(. != null)
-          | "\(.id);\(.ref)"
-        ' 2>/dev/null <<<"$body"
+          first(
+            .[]
+            | select(
+                .name == $name
+                and ( ($use_branch | not) or (.ref == $branch) )
+              )
+            | "\(.id);\(.ref)"
+          ) // empty
+        ' <<<"$body"
     )" || return 3
 
     if [[ -n "$out" ]]; then
@@ -289,8 +317,8 @@ get_latest_job_id_by_name() {
       return 0
     fi
 
-    jq -e 'length > 0' <<<"$body" >/dev/null || return 1
-    page=$((page+1))
+    [[ -n "$next_page" ]] || return 1
+    page="$next_page"
   done
 }
 
