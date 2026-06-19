@@ -22,7 +22,7 @@ import requests
 # ---------------------------------------------------------------------------
 # Logging setup
 # ---------------------------------------------------------------------------
-logging.basicConfig(format="%(message)s", level=logging.INFO)
+logging.basicConfig(format="%(message)s", level=logging.ERROR)
 log = logging.getLogger(__name__)
 
 GREEN  = "\033[0;32m"
@@ -193,14 +193,9 @@ def prompt_if_unset(var_name: str, prompt_msg: str) -> str:
 # ---------------------------------------------------------------------------
 # Dependency checks
 # ---------------------------------------------------------------------------
-def check_dependencies(extract: bool, load_image: bool, container_engine: str) -> None:
-    missing = []
-    if load_image and not shutil.which(container_engine):
-        missing.append(container_engine)
-    if missing:
-        for dep in missing:
-            log_error(f"{dep} is required but not found in PATH")
-        sys.exit(1)
+def check_dependencies(load_image: bool, container_engine: str) -> None:
+    if not shutil.which(container_engine):
+        log_warn(f"{container_engine} not found in PATH — 'create-tar' jobs will fail")
     # requests, zipfile, json are stdlib / declared deps — no need to check at runtime
 
 
@@ -275,18 +270,15 @@ def get_latest_job_id_by_name(
 # ---------------------------------------------------------------------------
 # Artifact download + extraction
 # ---------------------------------------------------------------------------
-def download_artifacts(
+def download_and_extract(
     gitlab_url: str,
     project_id: int,
     job_id: int,
     token: str,
     output_dir: Path,
     clean_output_dir: bool,
-    extract: bool,
-    load_image: bool,
-    container_engine: str,
-    docker_image_tag: str,
-) -> None:
+) -> list[Path]:
+    """Download the artifact zip and extract it. Returns list of extracted files."""
     url = f"{gitlab_url}/api/v4/projects/{project_id}/jobs/{job_id}/artifacts"
     zip_path = output_dir / "artifacts.zip"
 
@@ -313,25 +305,170 @@ def download_artifacts(
                 fh.write(chunk)
 
     log_info(f"Artifacts downloaded to: {zip_path}")
-
-    if not extract:
-        log_info(f"Artifacts saved as zip file: {zip_path}")
-        return
-
     log_info("Extracting artifacts...")
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(output_dir)
-    log_info(f"Artifacts extracted to: {output_dir}")
 
     extracted = [p for p in output_dir.rglob("*") if p.is_file() and p.name != "artifacts.zip"]
-    log_info("Extracted files:")
-    for f in extracted[:20]:
-        log_info(f"  {f}")
-    if len(extracted) > 20:
-        log_info(f"  ... and {len(extracted) - 20} more files")
+    log_info(f"Extracted {len(extracted)} file(s) to: {output_dir}")
+    return extracted
 
-    if load_image:
-        load_docker_image(output_dir, container_engine, docker_image_tag)
+
+# ---------------------------------------------------------------------------
+# Job-specific post-processing handlers
+# ---------------------------------------------------------------------------
+def handle_create_tar(extracted: list[Path], output_dir: Path, container_engine: str, docker_image_tag: str) -> None:
+    load_docker_image(output_dir, container_engine, docker_image_tag)
+
+
+# Severity order for display
+SEVERITY_ORDER = ["Critical", "High", "Medium", "Low", "Unknown"]
+
+
+def _normalize_severity(s: str) -> str:
+    return s.strip().capitalize() if s else "Unknown"
+
+
+def _summarize_vat_image(image: dict, is_parent: bool) -> dict:
+    """Extract the summary fields from a VAT image dict into a plain Python dict."""
+    from collections import defaultdict
+    name    = image.get("imageName", "?")
+    tag     = image.get("tag", "?")
+    state   = image.get("state", {})
+    factors = state.get("factors", {})
+    by_sev: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for f in image.get("findings", []):
+        sev    = _normalize_severity(f.get("severity", ""))
+        status = f.get("state", {}).get("findingStatus", "Unknown")
+        by_sev[sev][status] += 1
+    findings_summary = {
+        sev: dict(by_sev[sev])
+        for sev in SEVERITY_ORDER
+        if sev in by_sev
+    }
+    return {
+        "isParent":       is_parent,
+        "imageName":      name,
+        "tag":            tag,
+        "built":          image.get("snapshot", {}).get("built", "?"),
+        "vatUrl":         image.get("vatUrl", ""),
+        "abc":            state.get("abc", "?"),
+        "ora":            state.get("ora", "?"),
+        "percentVerified":state.get("percentVerified", "?"),
+        "issues":         factors.get("abc", {}).get("issues", []),
+        "findings":       findings_summary,
+    }
+
+
+def _print_vat_image(summary: dict) -> None:
+    """Print a pre-summarized VAT image dict in human-readable form."""
+    label = f"{summary['imageName']}:{summary['tag']}"
+    suffix = " (parent)" if summary["isParent"] else ""
+    print(f"\n=== {label}{suffix} ===")
+    print(f"  Image:            {label}")
+    print(f"  Built:            {summary['built']}")
+    print(f"  VAT URL:          {summary['vatUrl']}")
+    print(f"  ABC:              {summary['abc']}")
+    print(f"  ORA:              {summary['ora']}")
+    print(f"  % Verified:       {summary['percentVerified']}")
+    issues = summary["issues"]
+    if issues:
+        print(f"  Issues:")
+        for issue in issues:
+            print(f"    - {issue}")
+    else:
+        print(f"  Issues:           none")
+    findings = summary["findings"]
+    if not findings:
+        print(f"  Findings:         none")
+        return
+    print(f"  Findings:")
+    for sev in SEVERITY_ORDER:
+        if sev not in findings:
+            continue
+        statuses = findings[sev]
+        total = sum(statuses.values())
+        parts = ", ".join(f"{count} {status}" for status, count in sorted(statuses.items()))
+        print(f"    {sev:<10} {total:>3}  ({parts})")
+
+
+def _collect_vat_images(ordered: list) -> list[tuple[dict, bool]]:
+    """
+    Parse the ordered list of (filename, Path) tuples and return
+    [(image_dict, is_parent), ...] in display order.
+    """
+    result = []
+    for filename, json_file in ordered:
+        try:
+            data = json.loads(json_file.read_text())
+        except json.JSONDecodeError as e:
+            log_error(f"Failed to parse {json_file}: {e}")
+            continue
+        if "image" in data:
+            result.append((data["image"], False))
+        elif "images" in data:
+            for entry in data.get("images", []):
+                img = entry.get("image", {})
+                if img:
+                    result.append((img, True))
+        # else: unrecognized structure (e.g. vat_request.json) — silently skip
+    return result
+
+
+def handle_vat(extracted: list[Path], output_format: str = "text", show_parent: bool = False) -> None:
+    json_files = {f.name: f for f in extracted if f.suffix.lower() == ".json"}
+    if not json_files:
+        log_warn("No JSON files found in VAT artifacts.")
+        return
+
+    # Process vat_response.json first, then parent_vat_response.json, then any others
+    ordered: list[tuple[str, Path]] = []
+    for priority in ("vat_response.json", "parent_vat_response.json"):
+        if priority in json_files:
+            ordered.append((priority, json_files.pop(priority)))
+    for name, path in sorted(json_files.items()):
+        ordered.append((name, path))
+
+    images = _collect_vat_images(ordered)
+    if not images:
+        return
+
+    summaries = [_summarize_vat_image(img, is_parent) for img, is_parent in images]
+    if not show_parent:
+        summaries = [s for s in summaries if not s["isParent"]]
+
+    if output_format == "json":
+        out = {
+            f"{s['imageName']}:{s['tag']}": s
+            for s in summaries
+        }
+        print(json.dumps(out, indent=2))
+    else:
+        for s in summaries:
+            _print_vat_image(s)
+
+
+def handle_unknown_job(job_name: str, extracted: list[Path]) -> None:
+    log_info(f"No specific handler for job '{job_name}'. Files in artifact zip:")
+    for f in extracted:
+        log_info(f"  {f.name}")
+
+
+def dispatch_job(
+    job_name: str,
+    extracted: list[Path],
+    output_dir: Path,
+    container_engine: str,
+    docker_image_tag: str,
+    output_format: str = "text",
+    show_parent: bool = False,
+) -> None:
+    if job_name == "create-tar":
+        handle_create_tar(extracted, output_dir, container_engine, docker_image_tag)
+    elif job_name == "vat":
+        handle_vat(extracted, output_format=output_format, show_parent=show_parent)
+    else:
+        handle_unknown_job(job_name, extracted)
 
 
 # ---------------------------------------------------------------------------
@@ -435,8 +572,6 @@ def resolve_project_id(raw: str) -> int | None:
 # Main
 # ---------------------------------------------------------------------------
 def main() -> None:
-    load_local_env()
-
     parser = argparse.ArgumentParser(
         description="GitLab Artifacts Downloader",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -448,11 +583,18 @@ def main() -> None:
     parser.add_argument("-t", "--tag",            dest="docker_image_tag", help="Docker image tag to apply after loading")
     parser.add_argument("-k", "--token",          dest="token",            help="GitLab access token")
     parser.add_argument("-o", "--output-dir",     dest="output_dir",       help="Output directory (default: temp dir)")
-    parser.add_argument("-v", "--verbose",        action="store_true",     help="Enable debug logging")
+    parser.add_argument("-l", "--log-level",      dest="log_level",        default="error",
+                        choices=["debug", "info", "warning", "error", "critical"],
+                        help="Log level (default: error)")
+    parser.add_argument("-f", "--output-format",  dest="output_format",    default="text",
+                        choices=["text", "json"],
+                        help="Output format for VAT results (default: text)")
+    parser.add_argument("-P", "--show-parent",    dest="show_parent",      action="store_true",
+                        help="Include parent image(s) in VAT output (default: off)")
     args = parser.parse_args()
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(getattr(logging, args.log_level.upper()))
+    load_local_env()
 
     # CLI args win over env; env already loaded above via load_local_env()
     gitlab_url       = args.gitlab_url       or os.environ.get("GITLAB_URL",       "")
@@ -462,11 +604,9 @@ def main() -> None:
     docker_image_tag = args.docker_image_tag or os.environ.get("DOCKER_IMAGE_TAG", "")
     token            = args.token            or os.environ.get("GITLAB_ACCESS_TOKEN", "")
 
-    container_engine  = os.environ.get("CONTAINER_ENGINE",  "docker")
-    output_dir_str    = args.output_dir or os.environ.get("OUTPUT_DIR", "")
-    clean_output_dir  = os.environ.get("CLEAN_OUTPUT_DIR",  "true").lower() == "true"
-    extract_artifacts = os.environ.get("EXTRACT_ARTIFACTS", "true").lower() == "true"
-    load_image        = os.environ.get("LOAD_IMAGE",        "true").lower() == "true"
+    container_engine = os.environ.get("CONTAINER_ENGINE", "docker")
+    output_dir_str   = args.output_dir or os.environ.get("OUTPUT_DIR", "")
+    clean_output_dir = os.environ.get("CLEAN_OUTPUT_DIR", "true").lower() == "true"
 
     if output_dir_str:
         output_dir = Path(output_dir_str)
@@ -534,37 +674,40 @@ def main() -> None:
             log_error(e)
         sys.exit(1)
 
-    check_dependencies(extract_artifacts, load_image, container_engine)
+    check_dependencies(load_image=True, container_engine=container_engine)
 
     # --- Summary ---
     log_info("GitLab Artifacts Downloader")
     log_info("==========================")
     log_info("Configuration:")
-    log_info(f"  GitLab URL:          {gitlab_url}")
-    log_info(f"  Project ID:          {project_id}")
-    log_info(f"  Job ID:              {job_id}")
-    log_info(f"  Output Directory:    {output_dir}")
-    log_info(f"  Extract Artifacts:   {extract_artifacts}")
-    log_info(f"  Load {container_engine} Image: {load_image}")
-    if load_image:
-        if docker_image_tag:
-            log_info(f"  {container_engine} Image Tag (preconfigured): {docker_image_tag}")
-        else:
-            log_info(f"  {container_engine} Image Tag: (will be derived from artifacts tar)")
+    log_info(f"  GitLab URL:       {gitlab_url}")
+    log_info(f"  Project ID:       {project_id}")
+    log_info(f"  Job ID:           {job_id}")
+    log_info(f"  Output Directory: {output_dir}")
+    if docker_image_tag:
+        log_info(f"  {container_engine} Image Tag (preconfigured): {docker_image_tag}")
 
-    get_job_info(gitlab_url, project_id, job_id, token)
+    job_info = get_job_info(gitlab_url, project_id, job_id, token)
+    job_name = job_info.get("name", "")
+    log_info(f"  Job name:         {job_name}")
 
-    download_artifacts(
+    extracted = download_and_extract(
         gitlab_url=gitlab_url,
         project_id=project_id,
         job_id=job_id,
         token=token,
         output_dir=output_dir,
         clean_output_dir=clean_output_dir,
-        extract=extract_artifacts,
-        load_image=load_image,
+    )
+
+    dispatch_job(
+        job_name=job_name,
+        extracted=extracted,
+        output_dir=output_dir,
         container_engine=container_engine,
         docker_image_tag=docker_image_tag,
+        output_format=args.output_format,
+        show_parent=args.show_parent,
     )
 
     log_info("Download completed successfully!")
