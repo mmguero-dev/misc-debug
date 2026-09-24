@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-RELEASE="26.07.1"
+RELEASE="26.08.0"
 SOURCE_BRANCH="inl-26.x"
 TARGET_BRANCH="development"
 IRONBANK_DIR="${HOME}/devel/ironbank"
